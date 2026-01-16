@@ -3,132 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RCP Pro v7 - FIABLE</title>
+    <title>RCP Pro v9 - Limpio</title>
     <style>
         body { background: #000; color: white; font-family: -apple-system, sans-serif; margin: 0; padding: 10px; }
         #app { max-width: 450px; margin: auto; }
         
-        /* HISTORIAL SIEMPRE VISIBLE AL INICIO */
-        #history-section { background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px; margin-bottom: 20px; max-height: 200px; overflow-y: auto; }
-        .history-card { background: #222; padding: 8px; border-radius: 5px; margin-bottom: 8px; border-left: 4px solid #3498db; font-size: 0.8rem; }
+        #history-section { background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px; margin-bottom: 15px; max-height: 160px; overflow-y: auto; }
+        .history-card { background: #1a1a1a; padding: 8px; border-radius: 5px; margin-bottom: 5px; border-left: 4px solid #2ecc71; font-size: 0.75rem; }
         
-        /* RELOJES */
-        .main-display { text-align: center; margin-bottom: 20px; }
-        #total-clock { font-size: 4rem; font-weight: bold; font-family: monospace; }
-        .cycle-box { background: #0a0a0a; border: 3px solid #444; border-radius: 20px; padding: 15px; margin: 10px 0; }
+        #total-clock { font-size: 4rem; font-weight: bold; font-family: monospace; text-align: center; display: block; }
+        .cycle-box { background: #0a0a0a; border: 2px solid #444; border-radius: 20px; padding: 15px; margin: 10px 0; text-align: center; }
         #cycle-clock { font-size: 5rem; font-weight: bold; color: #00ff00; font-family: monospace; line-height: 1; }
 
-        /* TABLA DE EVENTOS EN VIVO */
-        #live-log { background: #050505; border: 1px solid #2ecc71; height: 180px; overflow-y: auto; border-radius: 10px; padding: 10px; margin-bottom: 15px; }
-        .log-entry { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #111; font-size: 0.9rem; }
-        .log-txt { color: #3498db; font-weight: bold; text-transform: uppercase; }
+        #live-log { background: #050505; border: 1px solid #3498db; height: 220px; overflow-y: auto; border-radius: 10px; padding: 10px; }
+        .log-entry { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #111; }
+        .log-txt { color: #3498db; font-weight: bold; text-transform: uppercase; font-size: 1rem; }
 
-        /* BOTONES */
         button { width: 100%; padding: 20px; font-size: 1.3rem; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
         #start-btn { background: #27ae60; color: white; }
         #stop-btn { background: #c0392b; color: white; }
-        #save-action-area { background: #1a1a1a; padding: 15px; border-radius: 15px; margin-top: 10px; border: 1px solid #2ecc71; }
+        #save-area { background: #111; padding: 15px; border-radius: 15px; margin-top: 10px; border: 1px solid #f1c40f; }
         
-        input { width: 90%; padding: 12px; margin-bottom: 10px; background: #000; border: 1px solid #444; color: white; border-radius: 8px; font-size: 1rem; }
-        .hidden { display: none !important; }
+        input { width: 90%; padding: 12px; margin-bottom: 10px; background: #000; border: 1px solid #444; color: white; border-radius: 8px; }
         .label { font-size: 0.7rem; color: #666; text-transform: uppercase; display: block; text-align: center; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
 <div id="app">
     <div id="history-section">
-        <span class="label">Registros de las últimas 24 horas</span>
-        <div id="history-list"><p style="font-size:0.7rem; color:#444; text-align:center;">No hay registros previos</p></div>
+        <span class="label">Historial de Turno (24h)</span>
+        <div id="history-list"></div>
     </div>
 
-    <div class="main-display">
-        <div id="total-clock">00:00</div>
-        <span class="label">Tiempo Total RCP</span>
-    </div>
+    <div id="total-clock">00:00</div>
+    <span class="label">Tiempo de Reanimación</span>
 
     <div class="cycle-box">
         <div id="cycle-clock">02:00</div>
-        <span class="label" id="mic-status">Micrófono Desactivado</span>
+        <span id="mic-status" class="label">Escucha Automática Lista</span>
     </div>
 
-    <div id="live-log">
-        <div id="log-placeholder" style="color:#333; text-align:center; padding-top:60px;">Las órdenes aparecerán aquí...</div>
-    </div>
+    <div id="live-log"></div>
 
-    <button id="start-btn">INICIAR RCP</button>
+    <button id="start-btn">INICIAR REANIMACIÓN</button>
     <button id="stop-btn" class="hidden">DETENER RCP</button>
 
-    <div id="save-action-area" class="hidden">
-        <input type="text" id="patient-id" placeholder="Nombre o Cama del Paciente">
-        <button id="confirm-save-btn" style="background:#2ecc71; font-size:1.1rem;">GUARDAR REGISTRO DEFINITIVO</button>
-        <button onclick="location.reload()" style="background:#444; font-size:1rem;">DESCARTAR / NUEVO</button>
+    <div id="save-area" class="hidden">
+        <input type="text" id="p-name" placeholder="ID Paciente / Cama">
+        <button id="save-confirm" style="background:#2ecc71;">GUARDAR EN BITÁCORA</button>
+        <button onclick="location.reload()" style="background:#444;">DESCARTAR / NUEVO</button>
     </div>
 </div>
 
 <script>
 let totalSec = 0, isRunning = false, logData = [], wakeLock = null;
 let tMain, tCycle, tBeep, recognition;
-const audio = new (window.AudioContext || window.webkitAudioContext)();
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-// DICCIONARIO EXPANDIDO CON ÓRDENES DIRECTAS
-const KEYWORDS = [
-    { keys: ['adrenalina', 'epinefrina'], label: 'ADRENALINA 1MG' },
-    { keys: ['amiodarona'], label: 'AMIODARONA' },
-    { keys: ['atropina'], label: 'ATROPINA' },
-    { keys: ['cardiovier', 'cardioversión', 'cardiovertelo'], label: 'CARDIOVERSIÓN' },
-    { keys: ['desfibrila', 'descarga', 'choque', 'desfibrílalo', 'dispara'], label: 'DESFIBRILACIÓN' },
-    { keys: ['máximo', 'tope', 'todo', 'full'], label: 'DESCARGA MÁXIMA (300J)' }
+const MEDICAMENTOS = [
+    { keys: ['adrena', 'epinef'], l: 'ADRENALINA 1mg' },
+    { keys: ['amioda'], l: 'AMIODARONA' },
+    { keys: ['atropi'], l: 'ATROPINA' },
+    { keys: ['cardiov', 'cardiovier', 'sincroniz'], l: 'CARDIOVERSIÓN' },
+    { keys: ['desfibri', 'descarga', 'choque', 'dispara'], l: 'DESFIBRILACIÓN' },
+    { keys: ['máximo', 'tope', 'full', 'max'], l: 'DESCARGA MÁXIMA (300J)' },
+    { keys: ['lidoca'], l: 'LIDOCAÍNA' },
+    { keys: ['bicarbo'], l: 'BICARBONATO' },
+    { keys: ['gluconato', 'calcio'], l: 'GLUC. CALCIO' }
 ];
 
-// RECONOCIMIENTO MEJORADO
 if ('webkitSpeechRecognition' in window) {
     recognition = new webkitSpeechRecognition();
     recognition.continuous = true;
-    recognition.interimResults = false;
     recognition.lang = 'es-ES';
-
     recognition.onresult = (e) => {
         const text = e.results[e.results.length - 1][0].transcript.toLowerCase();
-        console.log("Escuchado:", text); // Para depuración en consola
-
-        KEYWORDS.forEach(item => {
-            if (item.keys.some(k => text.includes(k))) {
-                registrarEvento(item.label);
-            }
+        MEDICAMENTOS.forEach(m => {
+            if (m.keys.some(k => text.includes(k))) registrar(m.l);
         });
     };
     recognition.onend = () => { if(isRunning) recognition.start(); };
 }
 
-function registrarEvento(label) {
+function registrar(label) {
     const time = document.getElementById('total-clock').innerText;
-    logData.push({ t: time, e: label });
-    
-    const container = document.getElementById('live-log');
-    if(document.getElementById('log-placeholder')) document.getElementById('log-placeholder').remove();
-    
+    // Evitar duplicados rápidos (misma orden en menos de 2 segundos)
+    if(logData.length > 0 && logData[logData.length-1].e === label && totalSec - logData[logData.length-1].s < 2) return;
+
+    logData.push({ t: time, e: label, s: totalSec });
     const div = document.createElement('div');
     div.className = 'log-entry';
     div.innerHTML = `<span class="log-txt">${label}</span><span style="color:#666;">Min ${time}</span>`;
-    container.prepend(div);
+    document.getElementById('live-log').prepend(div);
+}
 
-    // Feedback sonoro rápido
-    const o = audio.createOscillator(); o.connect(audio.destination);
-    o.frequency.setValueAtTime(1200, audio.currentTime); o.start(); o.stop(audio.currentTime + 0.05);
+function playMedBeep() {
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+    o.frequency.setValueAtTime(800, audioCtx.currentTime); 
+    g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.05);
+    o.start(); o.stop(audioCtx.currentTime + 0.06);
 }
 
 document.getElementById('start-btn').onclick = async () => {
     isRunning = true;
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
     if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
-    if(recognition) {
-        recognition.start();
-        document.getElementById('mic-status').innerText = "● ESCUCHANDO ÓRDENES";
-        document.getElementById('mic-status').style.color = "red";
-    }
-
+    
     document.getElementById('start-btn').classList.add('hidden');
     document.getElementById('stop-btn').classList.remove('hidden');
+    document.getElementById('mic-status').innerText = "● MICROFONO ACTIVO";
+    document.getElementById('mic-status').style.color = "#e74c3c";
+    
+    if(recognition) recognition.start();
 
     tMain = setInterval(() => {
         totalSec++;
@@ -139,11 +130,7 @@ document.getElementById('start-btn').onclick = async () => {
 
     const ciclo = () => {
         let s = 120;
-        tBeep = setInterval(() => {
-            const o = audio.createOscillator(); o.connect(audio.destination);
-            o.frequency.setValueAtTime(1000, audio.currentTime);
-            o.start(); o.stop(audio.currentTime + 0.1);
-        }, 545);
+        tBeep = setInterval(playMedBeep, 545);
         tCycle = setInterval(() => {
             s--;
             let cm = Math.floor(s/60).toString().padStart(2,'0');
@@ -164,48 +151,33 @@ document.getElementById('stop-btn').onclick = () => {
     clearInterval(tMain); clearInterval(tCycle); clearInterval(tBeep);
     if(recognition) recognition.stop();
     if(wakeLock) wakeLock.release();
-    
     document.getElementById('stop-btn').classList.add('hidden');
-    document.getElementById('save-action-area').classList.remove('hidden');
+    document.getElementById('save-area').classList.remove('hidden');
 };
 
-document.getElementById('confirm-save-btn').onclick = () => {
-    const patient = document.getElementById('patient-id').value || "Paciente Anónimo";
-    const session = {
-        id: Date.now(),
-        name: patient,
-        duration: document.getElementById('total-clock').innerText,
-        date: new Date().toLocaleString([], {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'}),
-        events: logData
-    };
-
-    let history = JSON.parse(localStorage.getItem('rcp_v7_history') || "[]");
-    history.push(session);
-    // Filtrar solo 24h
-    history = history.filter(h => h.id > Date.now() - 86400000);
-    localStorage.setItem('rcp_v7_history', JSON.stringify(history));
-    
-    renderHistory();
-    document.getElementById('save-action-area').innerHTML = `<p style="color:#2ecc71; text-align:center;">✓ Guardado Correctamente</p><button onclick="location.reload()">INICIAR NUEVO PACIENTE</button>`;
+document.getElementById('save-confirm').onclick = () => {
+    const name = document.getElementById('p-name').value || "S/N";
+    const session = { id: Date.now(), n: name, d: document.getElementById('total-clock').innerText, ev: logData };
+    let h = JSON.parse(localStorage.getItem('rcp_v9') || "[]");
+    h.push(session);
+    localStorage.setItem('rcp_v9', JSON.stringify(h.filter(x => x.id > Date.now() - 86400000)));
+    renderH();
+    document.getElementById('save-area').innerHTML = "<p style='color:#2ecc71; text-align:center;'>✓ Registro Guardado</p><button onclick='location.reload()'>NUEVA RCP</button>";
 };
 
-function renderHistory() {
-    const history = JSON.parse(localStorage.getItem('rcp_v7_history') || "[]");
-    const list = document.getElementById('history-list');
-    if(history.length === 0) return;
-
-    list.innerHTML = history.reverse().map(h => `
+function renderH() {
+    const h = JSON.parse(localStorage.getItem('rcp_v9') || "[]");
+    document.getElementById('history-list').innerHTML = h.reverse().map(x => `
         <div class="history-card">
-            <strong>${h.name}</strong> - ${h.duration} (${h.date})
-            <details style="margin-top:5px; color:#aaa;">
-                <summary>Ver Eventos</summary>
-                ${h.events.map(e => `• [${e.t}] ${e.e}`).join('<br>')}
+            <b>${x.n}</b> | Duración: ${x.d} 
+            <details style="margin-top:5px; color:#666;">
+                <summary>Ver Detalles</summary>
+                ${x.ev.map(e => `• [${e.t}] ${e.e}`).join('<br>')}
             </details>
         </div>
     `).join('');
 }
-
-renderHistory();
+renderH();
 </script>
 </body>
 </html>
