@@ -2,31 +2,33 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Asistente RCP Pro</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <style>
         body { background: #000; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
         #app { text-align: center; width: 90%; max-width: 450px; }
         .setup-panel { background: #111; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #333; }
-        #sound-selector { width: 100%; padding: 10px; background: #222; color: white; border: 1px solid #555; border-radius: 5px; font-size: 1rem; }
+        #sound-selector { width: 100%; padding: 12px; background: #222; color: white; border: 1px solid #555; border-radius: 5px; font-size: 1.1rem; }
         .total-container { margin-bottom: 5px; }
         #total-clock { font-size: 3.5rem; font-weight: bold; font-family: monospace; }
         hr { border: 0; border-top: 1px solid #333; margin: 15px 0; }
-        .cycle-container { background: #0a0a0a; padding: 20px; border-radius: 20px; margin-bottom: 20px; transition: 0.1s; border: 2px solid #222; }
+        .cycle-container { background: #0a0a0a; padding: 20px; border-radius: 20px; margin-bottom: 20px; transition: 0.1s; border: 4px solid #222; }
         #cycle-clock { font-size: 6.5rem; font-weight: bold; color: #00ff00; font-family: monospace; }
-        #status-label { font-size: 1.2rem; color: #888; font-weight: bold; }
+        #status-label { font-size: 1.2rem; color: #888; font-weight: bold; text-transform: uppercase; }
         button { width: 100%; padding: 22px; font-size: 1.8rem; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; }
         #start-btn { background: #27ae60; color: white; }
         #stop-btn { background: #c0392b; color: white; }
         .hidden { display: none; }
-        .label { font-size: 0.8rem; color: #666; margin-top: 10px; }
+        .label { font-size: 0.8rem; color: #666; margin-top: 10px; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
 <div id="app">
     <div class="setup-panel" id="setup-panel">
-        <h3>CONFIGURACIÓN RCP</h3>
+        <h3 style="margin-top:0">CONFIGURACIÓN</h3>
         <select id="sound-selector">
             <option value="tack">1. Tack Madera (Bajo)</option>
             <option value="click">2. Click Metálico (Agudo)</option>
@@ -34,19 +36,22 @@
             <option value="drum">4. Percusión Seca</option>
             <option value="beep">5. Beep Médico</option>
         </select>
-        <div style="color: #f1c40f; font-size: 0.8rem; margin-top: 10px;">⚠️ Active "No Molestar" en su sistema.</div>
+        <div style="color: #f1c40f; font-size: 0.8rem; margin-top: 10px;">⚠️ Sugerencia: Active "No Molestar"</div>
     </div>
 
     <div class="total-container">
         <div class="label">TIEMPO TOTAL RCP</div>
         <div id="total-clock">00:00</div>
     </div>
+    
     <hr>
+
     <div class="cycle-container" id="visual-box">
-        <div id="status-label">LISTO</div>
+        <div id="status-label">LISTO PARA INICIAR</div>
         <div id="cycle-clock">02:00</div>
         <div class="label">CICLO DE COMPRESIONES</div>
     </div>
+
     <div class="controls">
         <button id="start-btn">INICIAR RCP</button>
         <button id="stop-btn" class="hidden">DETENER RCP</button>
@@ -54,54 +59,74 @@
 </div>
 
 <script>
+// --- MOTOR DE AUDIO ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let totalSec = 0, cycleSec = 120, isRunning = false;
 let totalTimer, cycleTimer, tackTimer, wakeLock = null;
 
 function playTack(tipo) {
     const now = audioCtx.currentTime;
-    const osc1 = audioCtx.createOscillator();
-    const gain1 = audioCtx.createGain();
-    const osc2 = audioCtx.createOscillator();
-    const gain2 = audioCtx.createGain();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
 
-    if (tipo === 'tack') {
-        osc1.type = 'square'; osc1.frequency.setValueAtTime(150, now);
-        gain1.gain.setValueAtTime(0.8, now);
-    } else if (tipo === 'click') {
-        osc1.type = 'triangle'; osc1.frequency.setValueAtTime(1000, now);
-        gain1.gain.setValueAtTime(1, now);
-    } else {
-        osc1.type = 'sine'; osc1.frequency.setValueAtTime(800, now);
-        gain1.gain.setValueAtTime(0.6, now);
+    gain.connect(audioCtx.destination);
+    osc.connect(filter);
+    filter.connect(gain);
+
+    switch(tipo) {
+        case 'tack': 
+            osc.type = 'square'; osc.frequency.setValueAtTime(150, now);
+            filter.frequency.setValueAtTime(800, now); gain.gain.setValueAtTime(0.8, now); break;
+        case 'click': 
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(1200, now);
+            filter.frequency.setValueAtTime(2000, now); gain.gain.setValueAtTime(0.9, now); break;
+        case 'digital': 
+            osc.type = 'square'; osc.frequency.setValueAtTime(200, now);
+            filter.frequency.setValueAtTime(1500, now); gain.gain.setValueAtTime(0.6, now); break;
+        case 'drum': 
+            osc.type = 'sine'; osc.frequency.setValueAtTime(80, now);
+            filter.frequency.setValueAtTime(500, now); gain.gain.setValueAtTime(1, now); break;
+        case 'beep': 
+            osc.type = 'sine'; osc.frequency.setValueAtTime(1000, now);
+            filter.frequency.setValueAtTime(3000, now); gain.gain.setValueAtTime(0.5, now); break;
     }
+    
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+    osc.start(now); osc.stop(now + 0.1);
 
-    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-    osc1.connect(gain1); gain1.connect(audioCtx.destination);
-    osc1.start(now); osc1.stop(now + 0.1);
-
+    // Flash visual en el borde
     const box = document.getElementById('visual-box');
     box.style.borderColor = "#00ff00";
-    setTimeout(() => box.style.borderColor = "#222", 50);
+    setTimeout(() => box.style.borderColor = "#222", 60);
 }
 
 function decir(texto) {
+    window.speechSynthesis.cancel();
     const msg = new SpeechSynthesisUtterance(texto);
     msg.lang = 'es-ES';
+    msg.rate = 1.1;
     window.speechSynthesis.speak(msg);
 }
 
+// --- LÓGICA PRINCIPAL ---
 const iniciarRCP = async () => {
     if (isRunning) return;
+
+    // Mantener pantalla encendida
     try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    
+    // Desbloquear audio
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
     
     isRunning = true;
     const soundType = document.getElementById('sound-selector').value;
+    
     document.getElementById('setup-panel').classList.add('hidden');
     document.getElementById('start-btn').classList.add('hidden');
     document.getElementById('stop-btn').classList.remove('hidden');
 
+    // Cronómetro total
     totalTimer = setInterval(() => {
         totalSec++;
         document.getElementById('total-clock').innerText = formatTime(totalSec);
@@ -111,11 +136,20 @@ const iniciarRCP = async () => {
         cycleSec = 120;
         document.getElementById('cycle-clock').style.color = "#00ff00";
         document.getElementById('status-label').innerText = "CICLO EN CURSO";
+        
+        // 110 BPM (Aprox 545ms entre golpes)
         tackTimer = setInterval(() => playTack(soundType), 545);
+
         cycleTimer = setInterval(() => {
             cycleSec--;
             document.getElementById('cycle-clock').innerText = formatTime(cycleSec);
-            if (cycleSec === 2) decir("Preparar cambio");
+            
+            // AVISO PREVIO (2 SEGUNDOS)
+            if (cycleSec === 2) {
+                decir("Preparar cambio");
+                document.getElementById('cycle-clock').style.color = "#e67e22";
+            }
+            
             if (cycleSec <= 0) {
                 clearInterval(cycleTimer); clearInterval(tackTimer);
                 decir("Cambio. Evalúe ritmo.");
@@ -130,15 +164,18 @@ const iniciarRCP = async () => {
 
 const formatTime = (s) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
 
+// --- EVENTOS Y AUTO-INICIO ---
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('start-btn').onclick = iniciarRCP;
-    document.getElementById('stop-btn').onclick = () => { if(confirm("¿Detener?")) location.reload(); };
+    document.getElementById('stop-btn').onclick = () => { if(confirm("¿Detener RCP?")) location.reload(); };
 
-    // Auto-inicio por URL (?action=start)
+    // Capturar el comando de Gemini (?action=start)
     const params = new URLSearchParams(window.location.search);
-    if (params.get('action') === 'start') setTimeout(iniciarRCP, 1000);
+    if (params.get('action') === 'start') {
+        setTimeout(iniciarRCP, 1500); // Pequeña pausa para cargar audio
+    }
 
-    // Voz
+    // Reconocimiento de voz interno
     const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (Speech) {
         const rec = new Speech(); rec.lang = 'es-ES'; rec.continuous = true;
@@ -147,9 +184,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (m.includes("iniciar")) iniciarRCP();
             if (m.includes("detener")) location.reload();
         };
-        rec.start();
+        try { rec.start(); } catch(e) {}
     }
 });
+
+// REGISTRO PARA MODO OFFLINE (PWA)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => console.log(err));
+  });
+}
 </script>
 </body>
 </html>
