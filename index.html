@@ -3,186 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RCP Pro - Beep Médico</title>
+    <title>RCP Pro - Registro & Descargas</title>
     <style>
-        body { background: #000; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        #app { text-align: center; width: 95%; max-width: 450px; }
-        .setup-panel { background: #111; padding: 10px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #333; }
-        #sound-selector { width: 100%; padding: 10px; background: #222; color: white; border: 1px solid #555; border-radius: 5px; font-size: 1rem; }
-        #total-clock { font-size: 3.5rem; font-weight: bold; font-family: monospace; color: #fff; }
-        .cycle-container { background: #0a0a0a; padding: 20px; border-radius: 20px; margin: 15px 0; border: 4px solid #222; transition: border-color 0.05s; }
-        #cycle-clock { font-size: 6rem; font-weight: bold; color: #00ff00; font-family: monospace; }
-        .stats-panel { background: #111; border-radius: 10px; padding: 15px; margin-top: 15px; text-align: left; border-left: 4px solid #3498db; }
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .stat-box { background: #1a1a1a; padding: 8px; border-radius: 5px; }
-        .stat-label { color: #888; font-size: 0.7rem; text-transform: uppercase; }
-        .stat-value { font-weight: bold; color: #3498db; font-size: 1rem; display: block; }
-        button { width: 100%; padding: 20px; font-size: 1.6rem; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        body { background: #000; color: white; font-family: -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        #app { text-align: center; width: 95%; max-width: 450px; padding: 10px; }
+        #total-clock { font-size: 3.2rem; font-weight: bold; font-family: monospace; line-height: 1; }
+        .cycle-container { background: #0a0a0a; padding: 15px; border-radius: 20px; margin: 10px 0; border: 4px solid #222; }
+        #cycle-clock { font-size: 5.5rem; font-weight: bold; color: #00ff00; font-family: monospace; line-height: 1; }
+        
+        .log-panel { background: #111; border-radius: 12px; padding: 10px; margin-top: 10px; text-align: left; border: 1px solid #333; max-height: 160px; overflow-y: auto; }
+        .log-item { border-bottom: 1px solid #222; padding: 6px 0; font-size: 0.85rem; display: flex; justify-content: space-between; }
+        .log-name { color: #3498db; font-weight: bold; text-transform: uppercase; }
+        .log-time { color: #888; font-family: monospace; }
+        
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 10px; }
+        .stat-box { background: #111; padding: 8px; border-radius: 8px; border: 1px solid #222; }
+        .stat-label { color: #666; font-size: 0.55rem; text-transform: uppercase; display: block; margin-bottom: 3px; }
+        .stat-val { font-weight: bold; font-size: 1.1rem; color: #fff; }
+        #res-descargas { color: #e74c3c; } /* Rojo para resaltar descargas */
+
+        button { width: 100%; padding: 18px; font-size: 1.3rem; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; margin-top: 8px; }
         #start-btn { background: #27ae60; color: white; }
         #stop-btn { background: #c0392b; color: white; }
-        #reset-btn { background: #444; color: white; font-size: 1.2rem; }
+        #copy-btn { background: #f39c12; color: white; font-size: 1rem; }
+        #reset-btn { background: #333; color: #aaa; font-size: 1rem; }
+        
+        .status-bar { font-size: 0.7rem; color: #444; margin-bottom: 5px; letter-spacing: 1px; font-weight: bold;}
         .hidden { display: none !important; }
-        .label { font-size: 0.75rem; color: #666; text-transform: uppercase; }
+        .label { font-size: 0.7rem; color: #555; text-transform: uppercase; margin-top: 2px; }
     </style>
 </head>
 <body>
 
 <div id="app">
-    <div class="setup-panel" id="setup-panel">
-        <select id="sound-selector">
-            <option value="beep" selected>1. Beep Médico (Predeterminado)</option>
-            <option value="tack">2. Tack Madera</option>
-        </select>
-    </div>
-
     <div id="total-clock">00:00</div>
-    <div class="label">Tiempo Total RCP</div>
+    <div class="label">Tiempo Reanimación</div>
 
-    <div class="cycle-container" id="visual-box">
-        <div id="status-label" style="color:#888; font-weight:bold; font-size:0.9rem">ESTADO: LISTO</div>
+    <div class="cycle-container">
+        <div class="status-bar" id="status-label">SISTEMA OFFLINE</div>
         <div id="cycle-clock">02:00</div>
-        <div class="label">Ciclo Actual</div>
+        <div class="label">Ciclo de Compresiones (110 BPM)</div>
     </div>
 
-    <div class="stats-panel" id="stats-panel">
-        <div class="stats-grid">
-            <div class="stat-box">
-                <span class="stat-label">Inicio</span>
-                <span id="res-inicio" class="stat-value">--:--:--</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-label">Fin</span>
-                <span id="res-fin" class="stat-value">--:--:--</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-label">Ciclos Completos</span>
-                <span id="res-ciclos" class="stat-value">0</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-label">Estado</span>
-                <span id="res-estado" class="stat-value" style="color:#888">ESPERA</span>
-            </div>
+    <div class="stats-grid">
+        <div class="stat-box">
+            <span class="stat-label">Inicio</span>
+            <span id="res-inicio" class="stat-val">--:--</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">Ciclos</span>
+            <span id="res-ciclos" class="stat-val">0</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">Descargas</span>
+            <span id="res-descargas" class="stat-val">0</span>
         </div>
     </div>
 
-    <button id="start-btn">INICIAR RCP</button>
-    <button id="stop-btn" class="hidden">FINALIZAR RCP</button>
+    <div class="log-panel" id="log-panel">
+        <div id="log-empty" style="color: #444; text-align: center; font-size: 0.8rem; padding: 10px;">Dicta fármacos, procedimientos o descargas...</div>
+        <div id="log-list"></div>
+    </div>
+
+    <button id="start-btn">INICIAR ASISTENTE</button>
+    <button id="stop-btn" class="hidden">DETENER RCP</button>
+    <button id="copy-btn" class="hidden">COPIAR BITÁCORA</button>
     <button id="reset-btn" class="hidden">NUEVO PACIENTE</button>
 </div>
 
 <script>
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-let totalSec = 0, cycleSec = 120, isRunning = false, numCiclos = 0;
-let totalTimer, cycleTimer, tackTimer, wakeLock = null;
+let totalSec = 0, isRunning = false, numCiclos = 0, numDescargas = 0, logData = [];
+let totalTimer, cycleTimer, tackTimer, recognition;
 
-function formatHora() {
-    const d = new Date();
-    return d.getHours().toString().padStart(2,'0') + ":" + 
-           d.getMinutes().toString().padStart(2,'0') + ":" + 
-           d.getSeconds().toString().padStart(2,'0');
+const DICTIONARY = [
+    { keys: ['adrenalina', 'epinefrina'], label: 'ADRENALINA' },
+    { keys: ['amiodarona'], label: 'AMIODARONA' },
+    { keys: ['lidocaina'], label: 'LIDOCAÍNA' },
+    { keys: ['atropina'], label: 'ATROPINA' },
+    { keys: ['adenosina'], label: 'ADENOSINA' },
+    { keys: ['bicarbonato'], label: 'BICARBONATO' },
+    { keys: ['calcio', 'gluconato'], label: 'GLUC. CALCIO' },
+    { keys: ['potasio'], label: 'POTASIO' },
+    { keys: ['magnesio', 'sulfato'], label: 'SULF. MAGNESIO' },
+    { keys: ['intuba', 'endotraqueal', 'tubo'], label: 'INTUBACIÓN ET' },
+    { keys: ['canaliza', 'periferica', 'via venosa'], label: 'VÍA PERIFÉRICA' },
+    { keys: ['central', 'subclavia', 'yugular'], label: 'CATÉTER CENTRAL' },
+    { keys: ['desfibrila', 'descarga', 'choque'], label: 'DESFIBRILACIÓN', isShock: true },
+    { keys: ['cardiover'], label: 'CARDIOVERSIÓN' }
+];
+
+if ('webkitSpeechRecognition' in window) {
+    recognition = new webkitSpeechRecognition();
+    recognition.continuous = true;
+    recognition.lang = 'es-ES';
+    recognition.onresult = (e) => {
+        const res = e.results[e.results.length - 1][0].transcript.toLowerCase();
+        DICTIONARY.forEach(item => {
+            if (item.keys.some(k => res.includes(k))) {
+                if (item.isShock) {
+                    numDescargas++;
+                    document.getElementById('res-descargas').innerText = numDescargas;
+                }
+                registrarEvento(item.label);
+            }
+        });
+    };
+    recognition.onend = () => { if(isRunning) recognition.start(); };
+}
+
+function registrarEvento(label) {
+    const t = formatTime(totalSec);
+    logData.push({ time: t, event: label });
+    const list = document.getElementById('log-list');
+    if (document.getElementById('log-empty')) document.getElementById('log-empty').remove();
+    const div = document.createElement('div');
+    div.className = 'log-item';
+    div.innerHTML = `<span class="log-name">${label}</span> <span class="log-time">Min ${t}</span>`;
+    list.prepend(div);
+    confirmacion();
+}
+
+function confirmacion() {
+    const n = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+    o.frequency.setValueAtTime(1400, n);
+    g.gain.setValueAtTime(0.05, n);
+    o.start(n); o.stop(n + 0.05);
 }
 
 function playBeep() {
-    const now = audioCtx.currentTime;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    
-    const tipo = document.getElementById('sound-selector').value;
-    if(tipo === 'beep') {
-        osc.type = 'sine'; osc.frequency.setValueAtTime(1000, now);
-    } else {
-        osc.type = 'square'; osc.frequency.setValueAtTime(150, now);
-    }
-    
-    gain.gain.setValueAtTime(0.4, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-    osc.start(now); osc.stop(now + 0.1);
-    
-    const box = document.getElementById('visual-box');
-    box.style.borderColor = "#00ff00";
-    setTimeout(() => box.style.borderColor = "#222", 60);
+    const n = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+    o.frequency.setValueAtTime(1000, n);
+    g.gain.setValueAtTime(0.2, n);
+    g.gain.exponentialRampToValueAtTime(0.001, n + 0.1);
+    o.start(n); o.stop(n + 0.1);
 }
 
-function decir(texto) {
+function decir(txt) {
     window.speechSynthesis.cancel();
-    const msg = new SpeechSynthesisUtterance(texto);
-    msg.lang = 'es-ES';
-    window.speechSynthesis.speak(msg);
+    const m = new SpeechSynthesisUtterance(txt);
+    m.lang = 'es-ES';
+    window.speechSynthesis.speak(m);
 }
 
-const iniciarRCP = async () => {
+const iniciar = async () => {
     if (isRunning) return;
-    try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
     if (audioCtx.state === 'suspended') await audioCtx.resume();
-    
     isRunning = true;
-    numCiclos = 0;
-    document.getElementById('res-inicio').innerText = formatHora();
-    document.getElementById('res-estado').innerText = "EN CURSO";
-    document.getElementById('res-estado').style.color = "#2ecc71";
-    document.getElementById('res-ciclos').innerText = "0";
-
-    document.getElementById('setup-panel').classList.add('hidden');
+    document.getElementById('res-inicio').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
     document.getElementById('start-btn').classList.add('hidden');
     document.getElementById('stop-btn').classList.remove('hidden');
-    document.getElementById('reset-btn').classList.add('hidden');
+    document.getElementById('status-label').innerText = "ESCUCHANDO...";
+    document.getElementById('status-label').style.color = "#2ecc71";
+    
+    if(recognition) recognition.start();
 
     totalTimer = setInterval(() => {
         totalSec++;
         document.getElementById('total-clock').innerText = formatTime(totalSec);
     }, 1000);
 
-    const correrCiclo = () => {
-        cycleSec = 120;
-        document.getElementById('cycle-clock').style.color = "#00ff00";
-        document.getElementById('status-label').innerText = "ESTADO: COMPRESIONES";
-        tackTimer = setInterval(playBeep, 545); // 110 BPM
-
+    const ciclo = () => {
+        let s = 120;
+        tackTimer = setInterval(playBeep, 545);
         cycleTimer = setInterval(() => {
-            cycleSec--;
-            document.getElementById('cycle-clock').innerText = formatTime(cycleSec);
-            if (cycleSec === 2) decir("Preparar cambio");
-            if (cycleSec <= 0) {
+            s--;
+            document.getElementById('cycle-clock').innerText = formatTime(s);
+            if(s === 5) decir("Cambio en cinco segundos");
+            if(s <= 0) {
                 clearInterval(cycleTimer); clearInterval(tackTimer);
                 numCiclos++;
                 document.getElementById('res-ciclos').innerText = numCiclos;
                 decir("Cambio. Evalúe ritmo.");
-                document.getElementById('cycle-clock').style.color = "#f1c40f";
-                document.getElementById('status-label').innerText = "ESTADO: RELEVO";
-                setTimeout(() => { if(isRunning) correrCiclo(); }, 5000);
+                setTimeout(() => { if(isRunning) ciclo(); }, 5000);
             }
         }, 1000);
     };
-    correrCiclo();
+    ciclo();
 };
 
-const detenerRCP = () => {
+const detener = () => {
     isRunning = false;
-    clearInterval(totalTimer);
-    clearInterval(cycleTimer);
-    clearInterval(tackTimer);
-    if (wakeLock) { wakeLock.release(); wakeLock = null; }
-    
-    document.getElementById('res-fin').innerText = formatHora();
-    document.getElementById('res-estado').innerText = "FINALIZADO";
-    document.getElementById('res-estado').style.color = "#e74c3c";
-    document.getElementById('status-label').innerText = "ESTADO: DETENIDO";
-    
+    clearInterval(totalTimer); clearInterval(cycleTimer); clearInterval(tackTimer);
+    if(recognition) recognition.stop();
+    document.getElementById('status-label').innerText = "REGISTRO FINALIZADO";
+    document.getElementById('status-label').style.color = "#e74c3c";
     document.getElementById('stop-btn').classList.add('hidden');
+    document.getElementById('copy-btn').classList.remove('hidden');
     document.getElementById('reset-btn').classList.remove('hidden');
 };
 
 const formatTime = (s) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
 
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('start-btn').onclick = iniciarRCP;
-    document.getElementById('stop-btn').onclick = detenerRCP;
-    document.getElementById('reset-btn').onclick = () => location.reload();
-
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('action') === 'start') setTimeout(iniciarRCP, 1000);
-});
+document.getElementById('start-btn').onclick = iniciar;
+document.getElementById('stop-btn').onclick = detener;
+document.getElementById('reset-btn').onclick = () => location.reload();
+document.getElementById('copy-btn').onclick = () => {
+    let txt = `RESUMEN RCP\n------------------\nHora Inicio: ${document.getElementById('res-inicio').innerText}\nDuración: ${document.getElementById('total-clock').innerText}\nCiclos: ${numCiclos}\nDescargas: ${numDescargas}\n\nBITÁCORA DE EVENTOS:\n`;
+    logData.slice().reverse().forEach(e => txt += `[${e.time}] ${e.event}\n`);
+    navigator.clipboard.writeText(txt);
+    alert("Resumen clínico copiado al portapapeles");
+};
 </script>
 </body>
 </html>
