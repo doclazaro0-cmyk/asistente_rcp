@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RCP Pro - Sin Interrupciones</title>
+    <title>RCP Pro - Beep Médico</title>
     <style>
         body { background: #000; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         #app { text-align: center; width: 95%; max-width: 450px; }
-        .setup-panel { background: #111; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #333; }
-        #sound-selector { width: 100%; padding: 12px; background: #222; color: white; border: 1px solid #555; border-radius: 5px; font-size: 1.1rem; }
-        #total-clock { font-size: 3.5rem; font-weight: bold; font-family: monospace; }
-        .cycle-container { background: #0a0a0a; padding: 20px; border-radius: 20px; margin: 15px 0; border: 4px solid #222; }
+        .setup-panel { background: #111; padding: 10px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #333; }
+        #sound-selector { width: 100%; padding: 10px; background: #222; color: white; border: 1px solid #555; border-radius: 5px; font-size: 1rem; }
+        #total-clock { font-size: 3.5rem; font-weight: bold; font-family: monospace; color: #fff; }
+        .cycle-container { background: #0a0a0a; padding: 20px; border-radius: 20px; margin: 15px 0; border: 4px solid #222; transition: border-color 0.05s; }
         #cycle-clock { font-size: 6rem; font-weight: bold; color: #00ff00; font-family: monospace; }
         .stats-panel { background: #111; border-radius: 10px; padding: 15px; margin-top: 15px; text-align: left; border-left: 4px solid #3498db; }
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .stat-box { background: #1a1a1a; padding: 8px; border-radius: 5px; }
         .stat-label { color: #888; font-size: 0.7rem; text-transform: uppercase; }
-        .stat-value { font-weight: bold; color: #3498db; font-size: 1rem; }
+        .stat-value { font-weight: bold; color: #3498db; font-size: 1rem; display: block; }
         button { width: 100%; padding: 20px; font-size: 1.6rem; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; margin-top: 10px; }
         #start-btn { background: #27ae60; color: white; }
         #stop-btn { background: #c0392b; color: white; }
@@ -30,16 +30,16 @@
 <div id="app">
     <div class="setup-panel" id="setup-panel">
         <select id="sound-selector">
-            <option value="tack">Sonido: Tack Madera</option>
-            <option value="beep">Sonido: Beep Médico</option>
+            <option value="beep" selected>1. Beep Médico (Predeterminado)</option>
+            <option value="tack">2. Tack Madera</option>
         </select>
     </div>
 
     <div id="total-clock">00:00</div>
-    <div class="label">Tiempo Total</div>
+    <div class="label">Tiempo Total RCP</div>
 
     <div class="cycle-container" id="visual-box">
-        <div id="status-label" style="color:#888; font-weight:bold">LISTO</div>
+        <div id="status-label" style="color:#888; font-weight:bold; font-size:0.9rem">ESTADO: LISTO</div>
         <div id="cycle-clock">02:00</div>
         <div class="label">Ciclo Actual</div>
     </div>
@@ -48,26 +48,26 @@
         <div class="stats-grid">
             <div class="stat-box">
                 <span class="stat-label">Inicio</span>
-                <span class="stat-value" id="res-inicio">--:--:--</span>
+                <span id="res-inicio" class="stat-value">--:--:--</span>
             </div>
             <div class="stat-box">
                 <span class="stat-label">Fin</span>
-                <span class="stat-value" id="res-fin">--:--:--</span>
+                <span id="res-fin" class="stat-value">--:--:--</span>
             </div>
             <div class="stat-box">
-                <span class="stat-label">Ciclos</span>
-                <span class="stat-value" id="res-ciclos">0</span>
+                <span class="stat-label">Ciclos Completos</span>
+                <span id="res-ciclos" class="stat-value">0</span>
             </div>
             <div class="stat-box">
                 <span class="stat-label">Estado</span>
-                <span class="stat-value" id="res-estado" style="color:#888">ESPERA</span>
+                <span id="res-estado" class="stat-value" style="color:#888">ESPERA</span>
             </div>
         </div>
     </div>
 
     <button id="start-btn">INICIAR RCP</button>
     <button id="stop-btn" class="hidden">FINALIZAR RCP</button>
-    <button id="reset-btn" class="hidden">NUEVO PACIENTE (RESETEAR)</button>
+    <button id="reset-btn" class="hidden">NUEVO PACIENTE</button>
 </div>
 
 <script>
@@ -82,15 +82,23 @@ function formatHora() {
            d.getSeconds().toString().padStart(2,'0');
 }
 
-function playTack() {
+function playBeep() {
     const now = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.frequency.setValueAtTime(document.getElementById('sound-selector').value === 'tack' ? 150 : 800, now);
-    gain.gain.setValueAtTime(0.5, now);
+    
+    const tipo = document.getElementById('sound-selector').value;
+    if(tipo === 'beep') {
+        osc.type = 'sine'; osc.frequency.setValueAtTime(1000, now);
+    } else {
+        osc.type = 'square'; osc.frequency.setValueAtTime(150, now);
+    }
+    
+    gain.gain.setValueAtTime(0.4, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
     osc.start(now); osc.stop(now + 0.1);
+    
     const box = document.getElementById('visual-box');
     box.style.borderColor = "#00ff00";
     setTimeout(() => box.style.borderColor = "#222", 60);
@@ -113,7 +121,8 @@ const iniciarRCP = async () => {
     document.getElementById('res-inicio').innerText = formatHora();
     document.getElementById('res-estado').innerText = "EN CURSO";
     document.getElementById('res-estado').style.color = "#2ecc71";
-    
+    document.getElementById('res-ciclos').innerText = "0";
+
     document.getElementById('setup-panel').classList.add('hidden');
     document.getElementById('start-btn').classList.add('hidden');
     document.getElementById('stop-btn').classList.remove('hidden');
@@ -127,7 +136,9 @@ const iniciarRCP = async () => {
     const correrCiclo = () => {
         cycleSec = 120;
         document.getElementById('cycle-clock').style.color = "#00ff00";
-        tackTimer = setInterval(playTack, 545);
+        document.getElementById('status-label').innerText = "ESTADO: COMPRESIONES";
+        tackTimer = setInterval(playBeep, 545); // 110 BPM
+
         cycleTimer = setInterval(() => {
             cycleSec--;
             document.getElementById('cycle-clock').innerText = formatTime(cycleSec);
@@ -138,6 +149,7 @@ const iniciarRCP = async () => {
                 document.getElementById('res-ciclos').innerText = numCiclos;
                 decir("Cambio. Evalúe ritmo.");
                 document.getElementById('cycle-clock').style.color = "#f1c40f";
+                document.getElementById('status-label').innerText = "ESTADO: RELEVO";
                 setTimeout(() => { if(isRunning) correrCiclo(); }, 5000);
             }
         }, 1000);
@@ -145,7 +157,6 @@ const iniciarRCP = async () => {
     correrCiclo();
 };
 
-// --- FUNCIÓN DE DETENCIÓN SIN VENTANAS ---
 const detenerRCP = () => {
     isRunning = false;
     clearInterval(totalTimer);
@@ -156,10 +167,10 @@ const detenerRCP = () => {
     document.getElementById('res-fin').innerText = formatHora();
     document.getElementById('res-estado').innerText = "FINALIZADO";
     document.getElementById('res-estado').style.color = "#e74c3c";
+    document.getElementById('status-label').innerText = "ESTADO: DETENIDO";
     
     document.getElementById('stop-btn').classList.add('hidden');
     document.getElementById('reset-btn').classList.remove('hidden');
-    // NO HAY CONFIRM(), LA PANTALLA QUEDA LIBRE
 };
 
 const formatTime = (s) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
