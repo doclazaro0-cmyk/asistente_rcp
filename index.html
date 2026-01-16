@@ -3,99 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Asistente RCP Pro</title>
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>Asistente RCP Pro - Registro</title>
     <style>
-        body { background: #000; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
-        #app { text-align: center; width: 90%; max-width: 450px; }
+        body { background: #000; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; overflow-x: hidden; }
+        #app { text-align: center; width: 95%; max-width: 450px; padding: 20px 0; }
         .setup-panel { background: #111; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #333; }
         #sound-selector { width: 100%; padding: 12px; background: #222; color: white; border: 1px solid #555; border-radius: 5px; font-size: 1.1rem; }
-        .total-container { margin-bottom: 5px; }
-        #total-clock { font-size: 3.5rem; font-weight: bold; font-family: monospace; }
-        hr { border: 0; border-top: 1px solid #333; margin: 15px 0; }
-        .cycle-container { background: #0a0a0a; padding: 20px; border-radius: 20px; margin-bottom: 20px; transition: 0.1s; border: 4px solid #222; }
-        #cycle-clock { font-size: 6.5rem; font-weight: bold; color: #00ff00; font-family: monospace; }
-        #status-label { font-size: 1.2rem; color: #888; font-weight: bold; text-transform: uppercase; }
-        button { width: 100%; padding: 22px; font-size: 1.8rem; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; }
+        
+        #total-clock { font-size: 3.5rem; font-weight: bold; font-family: monospace; line-height: 1; }
+        .cycle-container { background: #0a0a0a; padding: 20px; border-radius: 20px; margin: 15px 0; transition: 0.1s; border: 4px solid #222; }
+        #cycle-clock { font-size: 6rem; font-weight: bold; color: #00ff00; font-family: monospace; line-height: 1; }
+        
+        /* Panel de Registro */
+        .stats-panel { background: #111; border-radius: 10px; padding: 15px; margin-top: 15px; text-align: left; border-left: 4px solid #3498db; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem; }
+        .stat-box { background: #1a1a1a; padding: 8px; border-radius: 5px; }
+        .stat-label { color: #888; font-size: 0.7rem; text-transform: uppercase; }
+        .stat-value { font-weight: bold; color: #3498db; display: block; font-size: 1rem; }
+
+        button { width: 100%; padding: 20px; font-size: 1.6rem; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; margin-top: 10px; }
         #start-btn { background: #27ae60; color: white; }
         #stop-btn { background: #c0392b; color: white; }
+        
         .hidden { display: none; }
-        .label { font-size: 0.8rem; color: #666; margin-top: 10px; letter-spacing: 1px; }
+        .label { font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
 <div id="app">
     <div class="setup-panel" id="setup-panel">
-        <h3 style="margin-top:0">CONFIGURACIÓN</h3>
+        <h3 style="margin:0 0 10px 0">CONFIGURACIÓN</h3>
         <select id="sound-selector">
-            <option value="tack">1. Tack Madera (Bajo)</option>
-            <option value="click">2. Click Metálico (Agudo)</option>
+            <option value="tack">1. Tack Madera</option>
+            <option value="click">2. Click Metálico</option>
             <option value="digital">3. Digital Fuerte</option>
-            <option value="drum">4. Percusión Seca</option>
+            <option value="drum">4. Percusión</option>
             <option value="beep">5. Beep Médico</option>
         </select>
-        <div style="color: #f1c40f; font-size: 0.8rem; margin-top: 10px;">⚠️ Sugerencia: Active "No Molestar"</div>
     </div>
 
     <div class="total-container">
-        <div class="label">TIEMPO TOTAL RCP</div>
         <div id="total-clock">00:00</div>
+        <div class="label">Tiempo Total de Maniobras</div>
     </div>
-    
-    <hr>
 
     <div class="cycle-container" id="visual-box">
-        <div id="status-label">LISTO PARA INICIAR</div>
+        <div id="status-label" style="color:#888; font-weight:bold">LISTO</div>
         <div id="cycle-clock">02:00</div>
-        <div class="label">CICLO DE COMPRESIONES</div>
+        <div class="label">Ciclo Actual</div>
+    </div>
+
+    <div class="stats-panel" id="stats-panel">
+        <div class="stats-grid">
+            <div class="stat-box">
+                <span class="stat-label">Inicio</span>
+                <span class="stat-value" id="res-inicio">--:--:--</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Fin</span>
+                <span class="stat-value" id="res-fin">--:--:--</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Ciclos Completos</span>
+                <span class="stat-value" id="res-ciclos">0</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Estado</span>
+                <span class="stat-value" id="res-estado" style="color:#e74c3c">DETENIDO</span>
+            </div>
+        </div>
     </div>
 
     <div class="controls">
         <button id="start-btn">INICIAR RCP</button>
-        <button id="stop-btn" class="hidden">DETENER RCP</button>
+        <button id="stop-btn" class="hidden">FINALIZAR RCP</button>
+        <button id="reset-btn" class="hidden" style="background:#555; color:white; font-size:1rem; padding:10px">NUEVO PACIENTE</button>
     </div>
 </div>
 
 <script>
-// --- MOTOR DE AUDIO ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-let totalSec = 0, cycleSec = 120, isRunning = false;
+let totalSec = 0, cycleSec = 120, isRunning = false, numCiclos = 0;
 let totalTimer, cycleTimer, tackTimer, wakeLock = null;
+
+function formatHora() {
+    const d = new Date();
+    return d.getHours().toString().padStart(2,'0') + ":" + 
+           d.getMinutes().toString().padStart(2,'0') + ":" + 
+           d.getSeconds().toString().padStart(2,'0');
+}
 
 function playTack(tipo) {
     const now = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     const filter = audioCtx.createBiquadFilter();
-
     gain.connect(audioCtx.destination);
-    osc.connect(filter);
-    filter.connect(gain);
+    osc.connect(filter); filter.connect(gain);
 
     switch(tipo) {
-        case 'tack': 
-            osc.type = 'square'; osc.frequency.setValueAtTime(150, now);
-            filter.frequency.setValueAtTime(800, now); gain.gain.setValueAtTime(0.8, now); break;
-        case 'click': 
-            osc.type = 'triangle'; osc.frequency.setValueAtTime(1200, now);
-            filter.frequency.setValueAtTime(2000, now); gain.gain.setValueAtTime(0.9, now); break;
-        case 'digital': 
-            osc.type = 'square'; osc.frequency.setValueAtTime(200, now);
-            filter.frequency.setValueAtTime(1500, now); gain.gain.setValueAtTime(0.6, now); break;
-        case 'drum': 
-            osc.type = 'sine'; osc.frequency.setValueAtTime(80, now);
-            filter.frequency.setValueAtTime(500, now); gain.gain.setValueAtTime(1, now); break;
-        case 'beep': 
-            osc.type = 'sine'; osc.frequency.setValueAtTime(1000, now);
-            filter.frequency.setValueAtTime(3000, now); gain.gain.setValueAtTime(0.5, now); break;
+        case 'tack': osc.type = 'square'; osc.frequency.setValueAtTime(150, now); break;
+        case 'click': osc.type = 'triangle'; osc.frequency.setValueAtTime(1200, now); break;
+        default: osc.type = 'square'; osc.frequency.setValueAtTime(200, now);
     }
-    
+    gain.gain.setValueAtTime(0.8, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
     osc.start(now); osc.stop(now + 0.1);
-
-    // Flash visual en el borde
+    
     const box = document.getElementById('visual-box');
     box.style.borderColor = "#00ff00";
     setTimeout(() => box.style.borderColor = "#222", 60);
@@ -105,28 +120,25 @@ function decir(texto) {
     window.speechSynthesis.cancel();
     const msg = new SpeechSynthesisUtterance(texto);
     msg.lang = 'es-ES';
-    msg.rate = 1.1;
     window.speechSynthesis.speak(msg);
 }
 
-// --- LÓGICA PRINCIPAL ---
 const iniciarRCP = async () => {
     if (isRunning) return;
-
-    // Mantener pantalla encendida
     try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
-    
-    // Desbloquear audio
     if (audioCtx.state === 'suspended') await audioCtx.resume();
     
     isRunning = true;
-    const soundType = document.getElementById('sound-selector').value;
-    
+    numCiclos = 0;
+    document.getElementById('res-inicio').innerText = formatHora();
+    document.getElementById('res-estado').innerText = "EN CURSO";
+    document.getElementById('res-estado').style.color = "#2ecc71";
+    document.getElementById('res-ciclos').innerText = "0";
+
     document.getElementById('setup-panel').classList.add('hidden');
     document.getElementById('start-btn').classList.add('hidden');
     document.getElementById('stop-btn').classList.remove('hidden');
 
-    // Cronómetro total
     totalTimer = setInterval(() => {
         totalSec++;
         document.getElementById('total-clock').innerText = formatTime(totalSec);
@@ -135,26 +147,18 @@ const iniciarRCP = async () => {
     const correrCiclo = () => {
         cycleSec = 120;
         document.getElementById('cycle-clock').style.color = "#00ff00";
-        document.getElementById('status-label').innerText = "CICLO EN CURSO";
-        
-        // 110 BPM (Aprox 545ms entre golpes)
-        tackTimer = setInterval(() => playTack(soundType), 545);
+        tackTimer = setInterval(() => playTack(document.getElementById('sound-selector').value), 545);
 
         cycleTimer = setInterval(() => {
             cycleSec--;
             document.getElementById('cycle-clock').innerText = formatTime(cycleSec);
-            
-            // AVISO PREVIO (2 SEGUNDOS)
-            if (cycleSec === 2) {
-                decir("Preparar cambio");
-                document.getElementById('cycle-clock').style.color = "#e67e22";
-            }
-            
+            if (cycleSec === 2) decir("Preparar cambio");
             if (cycleSec <= 0) {
                 clearInterval(cycleTimer); clearInterval(tackTimer);
+                numCiclos++;
+                document.getElementById('res-ciclos').innerText = numCiclos;
                 decir("Cambio. Evalúe ritmo.");
                 document.getElementById('cycle-clock').style.color = "#f1c40f";
-                document.getElementById('status-label').innerText = "PAUSA 5 SEG";
                 setTimeout(() => { if(isRunning) correrCiclo(); }, 5000);
             }
         }, 1000);
@@ -162,38 +166,31 @@ const iniciarRCP = async () => {
     correrCiclo();
 };
 
+const detenerRCP = () => {
+    isRunning = false;
+    clearInterval(totalTimer);
+    clearInterval(cycleTimer);
+    clearInterval(tackTimer);
+    if (wakeLock) { wakeLock.release(); wakeLock = null; }
+    
+    document.getElementById('res-fin').innerText = formatHora();
+    document.getElementById('res-estado').innerText = "FINALIZADO";
+    document.getElementById('res-estado').style.color = "#e74c3c";
+    
+    document.getElementById('stop-btn').classList.add('hidden');
+    document.getElementById('reset-btn').classList.remove('hidden');
+};
+
 const formatTime = (s) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
 
-// --- EVENTOS Y AUTO-INICIO ---
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('start-btn').onclick = iniciarRCP;
-    document.getElementById('stop-btn').onclick = () => { if(confirm("¿Detener RCP?")) location.reload(); };
+    document.getElementById('stop-btn').onclick = detenerRCP;
+    document.getElementById('reset-btn').onclick = () => location.reload();
 
-    // Capturar el comando de Gemini (?action=start)
     const params = new URLSearchParams(window.location.search);
-    if (params.get('action') === 'start') {
-        setTimeout(iniciarRCP, 1500); // Pequeña pausa para cargar audio
-    }
-
-    // Reconocimiento de voz interno
-    const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (Speech) {
-        const rec = new Speech(); rec.lang = 'es-ES'; rec.continuous = true;
-        rec.onresult = (e) => {
-            const m = e.results[e.results.length-1][0].transcript.toLowerCase();
-            if (m.includes("iniciar")) iniciarRCP();
-            if (m.includes("detener")) location.reload();
-        };
-        try { rec.start(); } catch(e) {}
-    }
+    if (params.get('action') === 'start') setTimeout(iniciarRCP, 1500);
 });
-
-// REGISTRO PARA MODO OFFLINE (PWA)
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(err => console.log(err));
-  });
-}
 </script>
 </body>
 </html>
