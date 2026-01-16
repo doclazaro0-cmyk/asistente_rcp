@@ -3,37 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RCP Pro - Persistencia 24h</title>
+    <title>RCP Pro v3 - Estable</title>
     <style>
-        body { background: #000; color: white; font-family: -apple-system, sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        #app { text-align: center; width: 95%; max-width: 450px; padding: 10px; }
+        body { background: #000; color: white; font-family: -apple-system, sans-serif; margin: 0; padding: 10px; display: flex; justify-content: center; }
+        #app { width: 100%; max-width: 450px; text-align: center; }
         
-        #total-clock { font-size: 3.2rem; font-weight: bold; font-family: monospace; }
-        .cycle-container { background: #0a0a0a; padding: 15px; border-radius: 20px; margin: 10px 0; border: 4px solid #222; }
+        /* Relojes siempre visibles */
+        .timer-section { margin-top: 10px; }
+        #total-clock { font-size: 3.5rem; font-weight: bold; font-family: monospace; color: #fff; }
+        .cycle-container { background: #111; padding: 20px; border-radius: 20px; margin: 15px 0; border: 4px solid #222; }
         #cycle-clock { font-size: 5.5rem; font-weight: bold; color: #00ff00; font-family: monospace; }
         
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 10px; }
-        .stat-box { background: #111; padding: 8px; border-radius: 8px; border: 1px solid #222; }
-        .stat-label { color: #666; font-size: 0.55rem; text-transform: uppercase; display: block; }
-        .stat-val { font-weight: bold; font-size: 1.1rem; }
+        /* Stats */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+        .stat-box { background: #1a1a1a; padding: 10px; border-radius: 10px; border: 1px solid #333; }
+        .stat-label { color: #666; font-size: 0.6rem; text-transform: uppercase; display: block; }
+        .stat-val { font-weight: bold; font-size: 1rem; color: #fff; }
 
-        /* Modal Reporte */
-        #report-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 100; justify-content: center; align-items: center; }
-        .modal-content { background: #1a1a1a; width: 92%; max-width: 400px; border-radius: 15px; padding: 15px; border: 1px solid #333; max-height: 90vh; overflow-y: auto; }
-        
-        /* Input Nombre al Final */
-        #patient-name-end { background: #222; border: 1px solid #2ecc71; color: white; padding: 15px; width: 90%; border-radius: 10px; margin-bottom: 15px; font-size: 1.1rem; text-align: center; }
+        /* Bitácora en tiempo real */
+        #live-log { background: #0a0a0a; border: 1px solid #333; border-radius: 10px; height: 150px; overflow-y: auto; text-align: left; padding: 10px; margin-bottom: 15px; }
+        .log-entry { font-size: 0.85rem; border-bottom: 1px solid #222; padding: 4px 0; display: flex; justify-content: space-between; }
+        .log-event { color: #3498db; font-weight: bold; }
+        .log-time { color: #888; }
 
-        .report-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; margin-top: 10px; }
-        .report-table td { padding: 6px 0; border-bottom: 1px solid #222; }
-
-        button { width: 100%; padding: 18px; font-size: 1.2rem; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; margin-top: 8px; }
+        /* Controles */
+        button { width: 100%; padding: 20px; font-size: 1.3rem; border-radius: 15px; border: none; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
         #start-btn { background: #27ae60; color: white; }
         #stop-btn { background: #c0392b; color: white; }
-        #history-btn { background: #444; color: #fff; font-size: 0.9rem; margin-top: 20px; border: 1px dashed #666; }
-        #save-final-btn { background: #2ecc71; color: white; }
         
-        .wake-lock-status { font-size: 0.6rem; color: #f1c40f; margin-top: 5px; }
+        /* Sección de Guardado (Post-Evento) */
+        #post-event-actions { background: #111; padding: 15px; border-radius: 15px; border: 1px solid #2ecc71; margin-top: 10px; }
+        #patient-name { background: #000; border: 1px solid #444; color: white; padding: 12px; width: 85%; border-radius: 8px; margin-bottom: 10px; font-size: 1rem; }
+        
         .hidden { display: none !important; }
         .label { font-size: 0.7rem; color: #555; text-transform: uppercase; }
     </style>
@@ -41,62 +42,45 @@
 <body>
 
 <div id="app">
-    <div id="total-clock">00:00</div>
-    <div class="label">Tiempo Total RCP</div>
+    <div class="timer-section">
+        <div id="total-clock">00:00</div>
+        <div class="label">Tiempo Total (Visible)</div>
+    </div>
 
     <div class="cycle-container">
         <div id="cycle-clock">02:00</div>
         <div class="label">Ciclo Actual</div>
-        <div id="lock-msg" class="wake-lock-status">SISTEMA LISTO</div>
     </div>
 
     <div class="stats-grid">
-        <div class="stat-box"><span class="stat-label">Inicio</span><span id="res-inicio" class="stat-val">--:--</span></div>
-        <div class="stat-box"><span class="stat-label">Ciclos</span><span id="res-ciclos" class="stat-val">0</span></div>
-        <div class="stat-box"><span class="stat-label">Choques</span><span id="res-descargas" class="stat-val" style="color:#e74c3c">0</span></div>
+        <div class="stat-box"><span class="stat-label">Inicio</span><span id="t-inicio" class="stat-val">--:--</span></div>
+        <div class="stat-box"><span class="stat-label">Fin</span><span id="t-fin" class="stat-val">--:--</span></div>
+        <div class="stat-box"><span class="stat-label">Choques</span><span id="n-choques" class="stat-val" style="color:red">0</span></div>
     </div>
 
-    <button id="start-btn">INICIAR REANIMACIÓN</button>
+    <div id="live-log">
+        <div id="empty-log" style="color:#444; text-align:center; font-size:0.8rem; padding-top:40px;">Las órdenes detectadas aparecerán aquí...</div>
+    </div>
+
+    <button id="start-btn">INICIAR RCP</button>
     <button id="stop-btn" class="hidden">DETENER RCP</button>
-    <button id="history-btn">HISTORIAL 24H</button>
-</div>
 
-<div id="report-modal">
-    <div class="modal-content">
-        <h3 id="modal-title" style="margin-top:0; color:#2ecc71;">Finalizar Registro</h3>
-        
-        <div id="identification-section">
-            <p style="font-size:0.8rem; color:#bbb;">Introduce el nombre o cama para guardar en el historial de 24h:</p>
-            <input type="text" id="patient-name-end" placeholder="Nombre / Cama del Paciente">
-            <button id="save-final-btn">GUARDAR Y VER RESUMEN</button>
-        </div>
-
-        <div id="report-section" class="hidden">
-            <div id="report-summary" style="text-align:left; font-size:0.85rem; background:#111; padding:10px; border-radius:8px;"></div>
-            <table class="report-table">
-                <tbody id="report-body"></tbody>
-            </table>
-            <button id="copy-text-btn" style="background:#f39c12; margin-top:15px;">COPIAR TEXTO</button>
-            <button id="close-modal-btn" style="background:#444;">NUEVO PACIENTE</button>
-        </div>
+    <div id="post-event-actions" class="hidden">
+        <input type="text" id="patient-name" placeholder="Nombre/Cama (Opcional)">
+        <button onclick="saveToHistory()" style="background:#2ecc71; font-size:1rem; padding:12px;">GUARDAR EN HISTORIAL 24H</button>
+        <button onclick="location.reload()" style="background:#444; font-size:1rem; padding:12px;">NUEVO PACIENTE (BORRAR)</button>
     </div>
 </div>
 
 <script>
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-let totalSec = 0, isRunning = false, numCiclos = 0, numDescargas = 0, logData = [], wakeLock = null;
+let totalSec = 0, isRunning = false, numDescargas = 0, logData = [], wakeLock = null;
 let totalTimer, cycleTimer, tackTimer, recognition;
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-// MANTENER PANTALLA
-const requestWakeLock = async () => {
-    try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); document.getElementById('lock-msg').innerText = "● PANTALLA ACTIVA"; } } catch (err) {}
-};
-
-// DICCIONARIO ACLS
+// Diccionario optimizado
 const DICTIONARY = [
     { keys: ['adrenalina','epinefrina'], label: 'ADRENALINA' },
     { keys: ['amiodarona'], label: 'AMIODARONA' },
-    { keys: ['lidocaina'], label: 'LIDOCAÍNA' },
     { keys: ['atropina'], label: 'ATROPINA' },
     { keys: ['adenosina'], label: 'ADENOSINA' },
     { keys: ['bicarbonato'], label: 'BICARBONATO' },
@@ -104,22 +88,26 @@ const DICTIONARY = [
     { keys: ['potasio'], label: 'POTASIO' },
     { keys: ['magnesio','sulfato'], label: 'SULF. MAGNESIO' },
     { keys: ['intuba','tubo'], label: 'INTUBACIÓN ET' },
-    { keys: ['canaliza','periferica'], label: 'VÍA PERIFÉRICA' },
-    { keys: ['central','subclavia'], label: 'CATÉTER CENTRAL' },
-    { keys: ['desfibrila','descarga','choque'], label: 'DESFIBRILACIÓN', isShock: true },
-    { keys: ['cardiover'], label: 'CARDIOVERSIÓN' }
+    { keys: ['canaliza','periferica','vía'], label: 'VÍA PERIFÉRICA' },
+    { keys: ['central'], label: 'CATÉTER CENTRAL' },
+    { keys: ['desfibrila','descarga','choque'], label: 'DESFIBRILACIÓN', isShock: true }
 ];
 
-// VOZ
+// Configuración de Voz Continua
 if ('webkitSpeechRecognition' in window) {
     recognition = new webkitSpeechRecognition();
     recognition.continuous = true;
+    recognition.interimResults = false;
     recognition.lang = 'es-ES';
+    
     recognition.onresult = (e) => {
-        const res = e.results[e.results.length - 1][0].transcript.toLowerCase();
+        const text = e.results[e.results.length - 1][0].transcript.toLowerCase();
         DICTIONARY.forEach(item => {
-            if (item.keys.some(k => res.includes(k))) {
-                if (item.isShock) { numDescargas++; document.getElementById('res-descargas').innerText = numDescargas; }
+            if (item.keys.some(k => text.includes(k))) {
+                if (item.isShock) {
+                    numDescargas++;
+                    document.getElementById('n-choques').innerText = numDescargas;
+                }
                 registrarEvento(item.label);
             }
         });
@@ -128,27 +116,43 @@ if ('webkitSpeechRecognition' in window) {
 }
 
 function registrarEvento(label) {
-    logData.push({ time: formatTime(totalSec), event: label });
+    const timeMark = formatTime(totalSec);
+    logData.push({ time: timeMark, event: label });
+    
+    const logDiv = document.getElementById('live-log');
+    if (document.getElementById('empty-log')) document.getElementById('empty-log').remove();
+    
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.innerHTML = `<span class="log-event">${label}</span> <span class="log-time">Min ${timeMark}</span>`;
+    logDiv.prepend(entry);
+    
+    // Feedback sonoro
     const o = audioCtx.createOscillator(); o.connect(audioCtx.destination);
-    o.frequency.setValueAtTime(1400, audioCtx.currentTime); o.start(); o.stop(audioCtx.currentTime + 0.05);
+    o.frequency.setValueAtTime(1200, audioCtx.currentTime); o.start(); o.stop(audioCtx.currentTime + 0.05);
 }
 
 const formatTime = (s) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
 
-// INICIAR
 document.getElementById('start-btn').onclick = async () => {
     if (audioCtx.state === 'suspended') await audioCtx.resume();
     isRunning = true;
-    requestWakeLock();
-    document.getElementById('res-inicio').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    
+    // Bloqueo de pantalla
+    if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+    
+    document.getElementById('t-inicio').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
     document.getElementById('start-btn').classList.add('hidden');
-    document.getElementById('history-btn').classList.add('hidden');
     document.getElementById('stop-btn').classList.remove('hidden');
+    
     if(recognition) recognition.start();
-    
-    totalTimer = setInterval(() => { totalSec++; document.getElementById('total-clock').innerText = formatTime(totalSec); }, 1000);
-    
-    const ciclo = () => {
+
+    totalTimer = setInterval(() => {
+        totalSec++;
+        document.getElementById('total-clock').innerText = formatTime(totalSec);
+    }, 1000);
+
+    const correrCiclo = () => {
         let s = 120;
         tackTimer = setInterval(() => {
             const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
@@ -157,101 +161,60 @@ document.getElementById('start-btn').onclick = async () => {
             g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+0.1);
             o.start(); o.stop(audioCtx.currentTime+0.1);
         }, 545);
+
         cycleTimer = setInterval(() => {
-            s--; document.getElementById('cycle-clock').innerText = formatTime(s);
-            if(s === 5) { const m = new SpeechSynthesisUtterance("Cambio en 5 segundos"); m.lang = 'es-ES'; window.speechSynthesis.speak(m); }
+            s--;
+            document.getElementById('cycle-clock').innerText = formatTime(s);
+            if(s === 5) {
+                const m = new SpeechSynthesisUtterance("Cambio en 5 segundos");
+                m.lang = 'es-ES'; window.speechSynthesis.speak(m);
+            }
             if(s <= 0) {
                 clearInterval(cycleTimer); clearInterval(tackTimer);
-                numCiclos++; document.getElementById('res-ciclos').innerText = numCiclos;
-                const m2 = new SpeechSynthesisUtterance("Cambio. Evalúe ritmo."); m2.lang = 'es-ES'; window.speechSynthesis.speak(m2);
-                setTimeout(() => { if(isRunning) ciclo(); }, 5000);
+                const m2 = new SpeechSynthesisUtterance("Cambio. Evalúe ritmo.");
+                m2.lang = 'es-ES'; window.speechSynthesis.speak(m2);
+                setTimeout(() => { if(isRunning) correrCiclo(); }, 5000);
             }
         }, 1000);
     };
-    ciclo();
+    correrCiclo();
 };
 
-// DETENER
 document.getElementById('stop-btn').onclick = () => {
     isRunning = false;
-    if (wakeLock) { wakeLock.release(); wakeLock = null; }
+    if (wakeLock) wakeLock.release();
     clearInterval(totalTimer); clearInterval(cycleTimer); clearInterval(tackTimer);
     if(recognition) recognition.stop();
-    document.getElementById('report-modal').style.display = 'flex';
+    
+    // Registrar hora de término
+    document.getElementById('t-fin').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    
+    // Mostrar acciones finales sin ocultar el reloj
+    document.getElementById('stop-btn').classList.add('hidden');
+    document.getElementById('post-event-actions').classList.remove('hidden');
 };
 
-// GUARDAR EN STORAGE 24H
-document.getElementById('save-final-btn').onclick = () => {
-    const name = document.getElementById('patient-name-end').value || "Paciente Anónimo";
-    const record = {
+function saveToHistory() {
+    const name = document.getElementById('patient-name').value || "Sin Nombre";
+    const report = {
         id: Date.now(),
         patient: name,
-        date: new Date().toLocaleString(),
-        inicio: document.getElementById('res-inicio').innerText,
-        duracion: formatTime(totalSec),
-        ciclos: numCiclos,
+        inicio: document.getElementById('t-inicio').innerText,
+        fin: document.getElementById('t-fin').innerText,
+        duracion: document.getElementById('total-clock').innerText,
         choques: numDescargas,
-        log: logData
+        eventos: logData
     };
-
-    // Guardar en historial
-    let history = JSON.parse(localStorage.getItem('rcp_history') || "[]");
-    history.push(record);
-    // Filtrar solo las últimas 24 horas
-    const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
-    history = history.filter(r => r.id > oneDayAgo);
-    localStorage.setItem('rcp_history', JSON.stringify(history));
-
-    mostrarReporte(record);
-};
-
-function mostrarReporte(record) {
-    document.getElementById('modal-title').innerText = "Reporte: " + record.patient;
-    document.getElementById('identification-section').classList.add('hidden');
-    document.getElementById('report-section').classList.remove('hidden');
     
-    document.getElementById('report-summary').innerHTML = `
-        <b>Fecha:</b> ${record.date}<br>
-        <b>Duración:</b> ${record.duracion} | <b>Ciclos:</b> ${record.ciclos} | <b>Choques:</b> ${record.choques}
-    `;
+    let history = JSON.parse(localStorage.getItem('rcp_24h') || "[]");
+    history.push(report);
+    // Mantener solo 24h
+    const limit = Date.now() - (24 * 60 * 60 * 1000);
+    history = history.filter(x => x.id > limit);
+    localStorage.setItem('rcp_24h', JSON.stringify(history));
     
-    const body = document.getElementById('report-body');
-    body.innerHTML = "";
-    record.log.forEach(e => { body.innerHTML += `<tr><td style="color:#888; width:50px;">${e.time}</td><td style="color:#3498db; font-weight:bold;">${e.event}</td></tr>`; });
+    alert("Datos guardados en historial de 24h.");
 }
-
-// VER HISTORIAL 24H
-document.getElementById('history-btn').onclick = () => {
-    let history = JSON.parse(localStorage.getItem('rcp_history') || "[]");
-    const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
-    history = history.filter(r => r.id > oneDayAgo);
-    
-    if (history.length === 0) { alert("No hay registros en las últimas 24 horas."); return; }
-    
-    let msg = "REGISTROS ÚLTIMAS 24H:\n\n";
-    history.forEach((r, i) => { msg += `${i+1}. ${r.patient} (${r.duracion})\n`; });
-    const choice = prompt(msg + "\nEscribe el número del registro para ver detalle:");
-    
-    if (choice && history[choice-1]) {
-        logData = history[choice-1].log;
-        totalSec = 0; // Para el formateador
-        numCiclos = history[choice-1].ciclos;
-        numDescargas = history[choice-1].choques;
-        document.getElementById('res-inicio').innerText = history[choice-1].inicio;
-        document.getElementById('report-modal').style.display = 'flex';
-        mostrarReporte(history[choice-1]);
-    }
-};
-
-document.getElementById('copy-text-btn').onclick = () => {
-    const summary = document.getElementById('report-summary').innerText;
-    let txt = `REPORTE RCP - ${document.getElementById('modal-title').innerText}\n${summary}\n\nEVENTOS:\n`;
-    logData.forEach(e => txt += `[${e.time}] ${e.event}\n`);
-    navigator.clipboard.writeText(txt);
-    alert("Copiado");
-};
-
-document.getElementById('close-modal-btn').onclick = () => location.reload();
 </script>
 </body>
 </html>
