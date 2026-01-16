@@ -3,29 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RCP Pro v9 - Limpio</title>
+    <title>RCP Pro v11 - Dosis Exactas</title>
     <style>
         body { background: #000; color: white; font-family: -apple-system, sans-serif; margin: 0; padding: 10px; }
         #app { max-width: 450px; margin: auto; }
         
-        #history-section { background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px; margin-bottom: 15px; max-height: 160px; overflow-y: auto; }
-        .history-card { background: #1a1a1a; padding: 8px; border-radius: 5px; margin-bottom: 5px; border-left: 4px solid #2ecc71; font-size: 0.75rem; }
+        #history-section { background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px; margin-bottom: 15px; max-height: 150px; overflow-y: auto; }
+        .history-card { background: #1a1a1a; padding: 8px; border-radius: 5px; margin-bottom: 5px; border-left: 4px solid #3498db; font-size: 0.7rem; }
         
-        #total-clock { font-size: 4rem; font-weight: bold; font-family: monospace; text-align: center; display: block; }
-        .cycle-box { background: #0a0a0a; border: 2px solid #444; border-radius: 20px; padding: 15px; margin: 10px 0; text-align: center; }
+        #total-clock { font-size: 4.5rem; font-weight: bold; font-family: monospace; text-align: center; display: block; line-height: 1; }
+        .time-stats { display: flex; justify-content: space-around; margin: 10px 0; font-size: 0.85rem; color: #888; }
+        .time-stats b { color: #2ecc71; }
+
+        .cycle-box { background: #0a0a0a; border: 3px solid #444; border-radius: 20px; padding: 15px; margin: 10px 0; text-align: center; }
         #cycle-clock { font-size: 5rem; font-weight: bold; color: #00ff00; font-family: monospace; line-height: 1; }
 
-        #live-log { background: #050505; border: 1px solid #3498db; height: 220px; overflow-y: auto; border-radius: 10px; padding: 10px; }
-        .log-entry { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #111; }
-        .log-txt { color: #3498db; font-weight: bold; text-transform: uppercase; font-size: 1rem; }
+        #live-log { background: #050505; border: 1px solid #3498db; height: 280px; overflow-y: auto; border-radius: 10px; padding: 8px; }
+        .log-entry { border-bottom: 1px solid #222; padding: 8px 0; }
+        .log-row { display: flex; justify-content: space-between; align-items: center; }
+        .log-txt { color: #3498db; font-weight: bold; text-transform: uppercase; font-size: 0.9rem; }
+        .log-dose { color: #f1c40f; font-weight: bold; font-size: 0.85rem; }
+        .log-sub { color: #555; font-size: 0.7rem; margin-top: 2px; }
 
         button { width: 100%; padding: 20px; font-size: 1.3rem; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
         #start-btn { background: #27ae60; color: white; }
         #stop-btn { background: #c0392b; color: white; }
-        #save-area { background: #111; padding: 15px; border-radius: 15px; margin-top: 10px; border: 1px solid #f1c40f; }
+        #save-area { background: #111; padding: 15px; border-radius: 15px; border: 1px solid #f1c40f; margin-top: 10px; }
         
         input { width: 90%; padding: 12px; margin-bottom: 10px; background: #000; border: 1px solid #444; color: white; border-radius: 8px; }
-        .label { font-size: 0.7rem; color: #666; text-transform: uppercase; display: block; text-align: center; }
+        .label { font-size: 0.65rem; color: #666; text-transform: uppercase; display: block; text-align: center; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -33,16 +39,19 @@
 
 <div id="app">
     <div id="history-section">
-        <span class="label">Historial de Turno (24h)</span>
+        <span class="label">Historial de Turno</span>
         <div id="history-list"></div>
     </div>
 
     <div id="total-clock">00:00</div>
-    <span class="label">Tiempo de Reanimación</span>
+    <div class="time-stats">
+        <span>INICIO: <b id="t-inicio-val">--:--</b></span>
+        <span>FIN: <b id="t-fin-val">--:--</b></span>
+    </div>
 
     <div class="cycle-box">
         <div id="cycle-clock">02:00</div>
-        <span id="mic-status" class="label">Escucha Automática Lista</span>
+        <span id="mic-status" class="label">Sistema de Voz Listo</span>
     </div>
 
     <div id="live-log"></div>
@@ -53,7 +62,7 @@
     <div id="save-area" class="hidden">
         <input type="text" id="p-name" placeholder="ID Paciente / Cama">
         <button id="save-confirm" style="background:#2ecc71;">GUARDAR EN BITÁCORA</button>
-        <button onclick="location.reload()" style="background:#444;">DESCARTAR / NUEVO</button>
+        <button onclick="location.reload()" style="background:#444;">NUEVO PACIENTE</button>
     </div>
 </div>
 
@@ -62,16 +71,19 @@ let totalSec = 0, isRunning = false, logData = [], wakeLock = null;
 let tMain, tCycle, tBeep, recognition;
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-const MEDICAMENTOS = [
-    { keys: ['adrena', 'epinef'], l: 'ADRENALINA 1mg' },
-    { keys: ['amioda'], l: 'AMIODARONA' },
-    { keys: ['atropi'], l: 'ATROPINA' },
-    { keys: ['cardiov', 'cardiovier', 'sincroniz'], l: 'CARDIOVERSIÓN' },
-    { keys: ['desfibri', 'descarga', 'choque', 'dispara'], l: 'DESFIBRILACIÓN' },
-    { keys: ['máximo', 'tope', 'full', 'max'], l: 'DESCARGA MÁXIMA (300J)' },
-    { keys: ['lidoca'], l: 'LIDOCAÍNA' },
-    { keys: ['bicarbo'], l: 'BICARBONATO' },
-    { keys: ['gluconato', 'calcio'], l: 'GLUC. CALCIO' }
+// Diccionario basado estrictamente en tu lista
+const DRUGS = [
+    { keys: ['adrenalina', 'epinef'], l: 'ADRENALINA', d: '1 mg' },
+    { keys: ['atropina'], l: 'ATROPINA', d: '1 mg' },
+    { keys: ['amiodarona'], l: 'AMIODARONA', d: '300 mg' },
+    { keys: ['adenosina'], l: 'ADENOSINA', d: '6 mg' },
+    { keys: ['bicarbonato', 'frasco'], l: 'BICARBONATO (Frasco)', d: '44.5 mEq' },
+    { keys: ['ámpula', 'ampula'], l: 'BICARBONATO (Ámpula)', d: '8.9 mEq' },
+    { keys: ['sulfato', 'magnesio'], l: 'SULFATO MAGNESIO', d: '1 gr (8.1 mEq)' },
+    { keys: ['lidocaina', 'xilocaina'], l: 'LIDOCAÍNA', d: '20 mg (1 ml)' },
+    { keys: ['gluconato', 'calcio'], l: 'GLUC. CALCIO', d: '1 gr (4.5 mEq)' },
+    { keys: ['cardiover', 'cardiovier'], l: 'CARDIOVERSIÓN', d: 'Sincronizada' },
+    { keys: ['desfibri', 'descarga', 'choque', 'desfibri'], l: 'DESFIBRILACIÓN', d: '300J (Máx)' }
 ];
 
 if ('webkitSpeechRecognition' in window) {
@@ -80,33 +92,44 @@ if ('webkitSpeechRecognition' in window) {
     recognition.lang = 'es-ES';
     recognition.onresult = (e) => {
         const text = e.results[e.results.length - 1][0].transcript.toLowerCase();
-        MEDICAMENTOS.forEach(m => {
-            if (m.keys.some(k => text.includes(k))) registrar(m.l);
+        DRUGS.forEach(m => {
+            if (m.keys.some(k => text.includes(k))) {
+                registrar(m.l, m.d);
+            }
         });
     };
     recognition.onend = () => { if(isRunning) recognition.start(); };
 }
 
-function registrar(label) {
-    const time = document.getElementById('total-clock').innerText;
-    // Evitar duplicados rápidos (misma orden en menos de 2 segundos)
-    if(logData.length > 0 && logData[logData.length-1].e === label && totalSec - logData[logData.length-1].s < 2) return;
+function registrar(label, dosis) {
+    const clockTime = document.getElementById('total-clock').innerText;
+    const realTime = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false});
+    
+    if(logData.length > 0 && logData[logData.length-1].e === label && totalSec - logData[logData.length-1].s < 3) return;
 
-    logData.push({ t: time, e: label, s: totalSec });
+    logData.push({ clock: clockTime, real: realTime, e: label, d: dosis, s: totalSec });
+    
     const div = document.createElement('div');
     div.className = 'log-entry';
-    div.innerHTML = `<span class="log-txt">${label}</span><span style="color:#666;">Min ${time}</span>`;
+    div.innerHTML = `
+        <div class="log-row">
+            <span class="log-txt">${label}</span>
+            <span class="log-dose">${dosis}</span>
+        </div>
+        <div class="log-sub">Hora: ${realTime} | RCP Min: ${clockTime}</div>
+    `;
     document.getElementById('live-log').prepend(div);
 }
 
-function playMedBeep() {
+function playLoudBeep() {
     const o = audioCtx.createOscillator();
     const g = audioCtx.createGain();
+    o.type = 'square'; // Onda cuadrada para máxima penetración sonora
     o.connect(g); g.connect(audioCtx.destination);
     o.frequency.setValueAtTime(800, audioCtx.currentTime); 
-    g.gain.setValueAtTime(0.1, audioCtx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.05);
-    o.start(); o.stop(audioCtx.currentTime + 0.06);
+    g.gain.setValueAtTime(1.5, audioCtx.currentTime); // Volumen amplificado
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+    o.start(); o.stop(audioCtx.currentTime + 0.1);
 }
 
 document.getElementById('start-btn').onclick = async () => {
@@ -114,9 +137,11 @@ document.getElementById('start-btn').onclick = async () => {
     if (audioCtx.state === 'suspended') await audioCtx.resume();
     if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
     
+    const start = new Date().toLocaleTimeString([], {hour12:false});
+    document.getElementById('t-inicio-val').innerText = start;
     document.getElementById('start-btn').classList.add('hidden');
     document.getElementById('stop-btn').classList.remove('hidden');
-    document.getElementById('mic-status').innerText = "● MICROFONO ACTIVO";
+    document.getElementById('mic-status').innerText = "● ESCUCHANDO ÓRDENES";
     document.getElementById('mic-status').style.color = "#e74c3c";
     
     if(recognition) recognition.start();
@@ -130,12 +155,10 @@ document.getElementById('start-btn').onclick = async () => {
 
     const ciclo = () => {
         let s = 120;
-        tBeep = setInterval(playMedBeep, 545);
+        tBeep = setInterval(playLoudBeep, 545);
         tCycle = setInterval(() => {
             s--;
-            let cm = Math.floor(s/60).toString().padStart(2,'0');
-            let cs = (s%60).toString().padStart(2,'0');
-            document.getElementById('cycle-clock').innerText = `${cm}:${cs}`;
+            document.getElementById('cycle-clock').innerText = `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
             if(s <= 0) {
                 clearInterval(tCycle); clearInterval(tBeep);
                 window.speechSynthesis.speak(new SpeechSynthesisUtterance("Cambio. Evalúe ritmo."));
@@ -148,6 +171,8 @@ document.getElementById('start-btn').onclick = async () => {
 
 document.getElementById('stop-btn').onclick = () => {
     isRunning = false;
+    const end = new Date().toLocaleTimeString([], {hour12:false});
+    document.getElementById('t-fin-val').innerText = end;
     clearInterval(tMain); clearInterval(tCycle); clearInterval(tBeep);
     if(recognition) recognition.stop();
     if(wakeLock) wakeLock.release();
@@ -156,23 +181,29 @@ document.getElementById('stop-btn').onclick = () => {
 };
 
 document.getElementById('save-confirm').onclick = () => {
-    const name = document.getElementById('p-name').value || "S/N";
-    const session = { id: Date.now(), n: name, d: document.getElementById('total-clock').innerText, ev: logData };
-    let h = JSON.parse(localStorage.getItem('rcp_v9') || "[]");
+    const name = document.getElementById('p-name').value || "Paciente S/N";
+    const session = { 
+        id: Date.now(), n: name, 
+        start: document.getElementById('t-inicio-val').innerText,
+        end: document.getElementById('t-fin-val').innerText,
+        dur: document.getElementById('total-clock').innerText, ev: logData 
+    };
+    let h = JSON.parse(localStorage.getItem('rcp_v11') || "[]");
     h.push(session);
-    localStorage.setItem('rcp_v9', JSON.stringify(h.filter(x => x.id > Date.now() - 86400000)));
+    localStorage.setItem('rcp_v11', JSON.stringify(h.filter(x => x.id > Date.now() - 86400000)));
     renderH();
     document.getElementById('save-area').innerHTML = "<p style='color:#2ecc71; text-align:center;'>✓ Registro Guardado</p><button onclick='location.reload()'>NUEVA RCP</button>";
 };
 
 function renderH() {
-    const h = JSON.parse(localStorage.getItem('rcp_v9') || "[]");
+    const h = JSON.parse(localStorage.getItem('rcp_v11') || "[]");
     document.getElementById('history-list').innerHTML = h.reverse().map(x => `
         <div class="history-card">
-            <b>${x.n}</b> | Duración: ${x.d} 
-            <details style="margin-top:5px; color:#666;">
-                <summary>Ver Detalles</summary>
-                ${x.ev.map(e => `• [${e.t}] ${e.e}`).join('<br>')}
+            <b>${x.n}</b> | Duración: ${x.dur}<br>
+            <small>${x.start} a ${x.end}</small>
+            <details style="margin-top:4px;">
+                <summary>Detalles</summary>
+                ${x.ev.map(e => `[${e.real}] ${e.e}: ${e.d}`).join('<br>')}
             </details>
         </div>
     `).join('');
