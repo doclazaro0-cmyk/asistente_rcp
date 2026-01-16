@@ -3,131 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RCP Pro v6 - Ultra Estable</title>
+    <title>RCP Pro v7 - FIABLE</title>
     <style>
-        body { background: #000; color: white; font-family: sans-serif; margin: 0; padding: 10px; }
-        #app { max-width: 450px; margin: auto; text-align: center; }
+        body { background: #000; color: white; font-family: -apple-system, sans-serif; margin: 0; padding: 10px; }
+        #app { max-width: 450px; margin: auto; }
         
-        /* Relojes */
-        #total-clock { font-size: 3.5rem; font-weight: bold; font-family: monospace; color: #fff; }
-        .cycle-box { background: #111; padding: 15px; border-radius: 15px; border: 3px solid #333; margin: 10px 0; }
+        /* HISTORIAL SIEMPRE VISIBLE AL INICIO */
+        #history-section { background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px; margin-bottom: 20px; max-height: 200px; overflow-y: auto; }
+        .history-card { background: #222; padding: 8px; border-radius: 5px; margin-bottom: 8px; border-left: 4px solid #3498db; font-size: 0.8rem; }
+        
+        /* RELOJES */
+        .main-display { text-align: center; margin-bottom: 20px; }
+        #total-clock { font-size: 4rem; font-weight: bold; font-family: monospace; }
+        .cycle-box { background: #0a0a0a; border: 3px solid #444; border-radius: 20px; padding: 15px; margin: 10px 0; }
         #cycle-clock { font-size: 5rem; font-weight: bold; color: #00ff00; font-family: monospace; line-height: 1; }
-        
-        /* Stats */
-        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin: 10px 0; }
-        .stat-card { background: #1a1a1a; padding: 8px; border-radius: 8px; border: 1px solid #333; }
-        .stat-label { font-size: 0.6rem; color: #888; text-transform: uppercase; }
-        .stat-val { font-size: 1rem; font-weight: bold; display: block; }
 
-        /* Bitácora en Vivo */
-        #live-log { background: #0a0a0a; border: 1px solid #444; height: 160px; overflow-y: auto; text-align: left; padding: 10px; margin-top: 10px; border-radius: 8px; }
-        .log-line { border-bottom: 1px solid #222; padding: 5px 0; display: flex; justify-content: space-between; font-size: 0.9rem; }
-        .log-ev { color: #3498db; font-weight: bold; }
-        
-        /* Botones */
-        button { width: 100%; padding: 18px; font-size: 1.2rem; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        /* TABLA DE EVENTOS EN VIVO */
+        #live-log { background: #050505; border: 1px solid #2ecc71; height: 180px; overflow-y: auto; border-radius: 10px; padding: 10px; margin-bottom: 15px; }
+        .log-entry { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #111; font-size: 0.9rem; }
+        .log-txt { color: #3498db; font-weight: bold; text-transform: uppercase; }
+
+        /* BOTONES */
+        button { width: 100%; padding: 20px; font-size: 1.3rem; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
         #start-btn { background: #27ae60; color: white; }
         #stop-btn { background: #c0392b; color: white; }
-        #save-btn { background: #2980b9; color: white; }
+        #save-action-area { background: #1a1a1a; padding: 15px; border-radius: 15px; margin-top: 10px; border: 1px solid #2ecc71; }
         
-        /* Historial */
-        #history-section { margin-top: 30px; border-top: 1px solid #333; padding-top: 10px; text-align: left; }
-        .history-item { background: #111; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.8rem; border-left: 4px solid #2ecc71; }
-        
+        input { width: 90%; padding: 12px; margin-bottom: 10px; background: #000; border: 1px solid #444; color: white; border-radius: 8px; font-size: 1rem; }
         .hidden { display: none !important; }
-        .mic-on { color: #e74c3c; font-size: 0.7rem; margin-top: 5px; }
+        .label { font-size: 0.7rem; color: #666; text-transform: uppercase; display: block; text-align: center; }
     </style>
 </head>
 <body>
 
 <div id="app">
-    <div id="total-clock">00:00</div>
-    <span class="stat-label">Tiempo de Reanimación</span>
+    <div id="history-section">
+        <span class="label">Registros de las últimas 24 horas</span>
+        <div id="history-list"><p style="font-size:0.7rem; color:#444; text-align:center;">No hay registros previos</p></div>
+    </div>
+
+    <div class="main-display">
+        <div id="total-clock">00:00</div>
+        <span class="label">Tiempo Total RCP</span>
+    </div>
 
     <div class="cycle-box">
         <div id="cycle-clock">02:00</div>
-        <div id="mic-label" class="mic-on hidden">● ESCUCHANDO ÓRDENES</div>
+        <span class="label" id="mic-status">Micrófono Desactivado</span>
     </div>
 
-    <div class="stats">
-        <div class="stat-card"><span class="stat-label">Inicio</span><span id="val-inicio" class="stat-val">--:--</span></div>
-        <div class="stat-card"><span class="stat-label">Fin</span><span id="val-fin" class="stat-val">--:--</span></div>
-        <div class="stat-card"><span class="stat-label">Choques</span><span id="val-choques" class="stat-val" style="color:red">0</span></div>
+    <div id="live-log">
+        <div id="log-placeholder" style="color:#333; text-align:center; padding-top:60px;">Las órdenes aparecerán aquí...</div>
     </div>
-
-    <div id="live-log"></div>
 
     <button id="start-btn">INICIAR RCP</button>
     <button id="stop-btn" class="hidden">DETENER RCP</button>
-    
-    <div id="save-area" class="hidden">
-        <input type="text" id="patient-id" placeholder="ID Paciente / Cama" style="width:90%; padding:10px; margin-top:10px; background:#222; color:white; border:1px solid #444; border-radius:8px;">
-        <button id="save-btn">GUARDAR EN HISTORIAL 24H</button>
-        <button onclick="location.reload()" style="background:#444;">LIMPIAR / NUEVO</button>
-    </div>
 
-    <div id="history-section">
-        <h3 style="font-size: 1rem; color: #888;">REGISTROS ÚLTIMAS 24H</h3>
-        <div id="history-list"></div>
+    <div id="save-action-area" class="hidden">
+        <input type="text" id="patient-id" placeholder="Nombre o Cama del Paciente">
+        <button id="confirm-save-btn" style="background:#2ecc71; font-size:1.1rem;">GUARDAR REGISTRO DEFINITIVO</button>
+        <button onclick="location.reload()" style="background:#444; font-size:1rem;">DESCARTAR / NUEVO</button>
     </div>
 </div>
 
 <script>
-let totalSec = 0, isRunning = false, shocks = 0, log = [], wakeLock = null;
+let totalSec = 0, isRunning = false, logData = [], wakeLock = null;
 let tMain, tCycle, tBeep, recognition;
 const audio = new (window.AudioContext || window.webkitAudioContext)();
 
+// DICCIONARIO EXPANDIDO CON ÓRDENES DIRECTAS
 const KEYWORDS = [
-    { k: ['adrenalina','epinefrina'], l: 'ADRENALINA 1mg' },
-    { k: ['amiodarona'], l: 'AMIODARONA' },
-    { k: ['atropina'], l: 'ATROPINA' },
-    { k: ['cardiover','cardioversión'], l: 'CARDIOVERSIÓN', s:true },
-    { k: ['descarga','choque','desfibrila'], l: 'DESFIBRILACIÓN', s:true },
-    { k: ['máximo','tope','full'], l: 'DESC. MÁXIMA (300J)', s:true }
+    { keys: ['adrenalina', 'epinefrina'], label: 'ADRENALINA 1MG' },
+    { keys: ['amiodarona'], label: 'AMIODARONA' },
+    { keys: ['atropina'], label: 'ATROPINA' },
+    { keys: ['cardiovier', 'cardioversión', 'cardiovertelo'], label: 'CARDIOVERSIÓN' },
+    { keys: ['desfibrila', 'descarga', 'choque', 'desfibrílalo', 'dispara'], label: 'DESFIBRILACIÓN' },
+    { keys: ['máximo', 'tope', 'todo', 'full'], label: 'DESCARGA MÁXIMA (300J)' }
 ];
 
+// RECONOCIMIENTO MEJORADO
 if ('webkitSpeechRecognition' in window) {
     recognition = new webkitSpeechRecognition();
     recognition.continuous = true;
+    recognition.interimResults = false;
     recognition.lang = 'es-ES';
+
     recognition.onresult = (e) => {
         const text = e.results[e.results.length - 1][0].transcript.toLowerCase();
+        console.log("Escuchado:", text); // Para depuración en consola
+
         KEYWORDS.forEach(item => {
-            if (item.k.some(key => text.includes(key))) {
-                addLog(item.l, item.s);
+            if (item.keys.some(k => text.includes(k))) {
+                registrarEvento(item.label);
             }
         });
     };
     recognition.onend = () => { if(isRunning) recognition.start(); };
 }
 
-function addLog(label, isShock) {
+function registrarEvento(label) {
     const time = document.getElementById('total-clock').innerText;
-    log.push({ t: time, e: label });
-    const div = document.getElementById('live-log');
-    div.innerHTML = `<div class="log-line"><span class="log-ev">${label}</span><span>Min ${time}</span></div>` + div.innerHTML;
-    if(isShock) {
-        shocks++;
-        document.getElementById('val-choques').innerText = shocks;
-    }
+    logData.push({ t: time, e: label });
+    
+    const container = document.getElementById('live-log');
+    if(document.getElementById('log-placeholder')) document.getElementById('log-placeholder').remove();
+    
+    const div = document.createElement('div');
+    div.className = 'log-entry';
+    div.innerHTML = `<span class="log-txt">${label}</span><span style="color:#666;">Min ${time}</span>`;
+    container.prepend(div);
+
+    // Feedback sonoro rápido
+    const o = audio.createOscillator(); o.connect(audio.destination);
+    o.frequency.setValueAtTime(1200, audio.currentTime); o.start(); o.stop(audio.currentTime + 0.05);
 }
 
 document.getElementById('start-btn').onclick = async () => {
     isRunning = true;
-    document.getElementById('val-inicio').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+    if(recognition) {
+        recognition.start();
+        document.getElementById('mic-status').innerText = "● ESCUCHANDO ÓRDENES";
+        document.getElementById('mic-status').style.color = "red";
+    }
+
     document.getElementById('start-btn').classList.add('hidden');
     document.getElementById('stop-btn').classList.remove('hidden');
-    document.getElementById('mic-label').classList.remove('hidden');
-    
-    if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
-    if(recognition) recognition.start();
 
     tMain = setInterval(() => {
         totalSec++;
-        document.getElementById('total-clock').innerText = `${Math.floor(totalSec/60).toString().padStart(2,'0')}:${(totalSec%60).toString().padStart(2,'0')}`;
+        let m = Math.floor(totalSec/60).toString().padStart(2,'0');
+        let s = (totalSec%60).toString().padStart(2,'0');
+        document.getElementById('total-clock').innerText = `${m}:${s}`;
     }, 1000);
 
-    const startCycle = () => {
+    const ciclo = () => {
         let s = 120;
         tBeep = setInterval(() => {
             const o = audio.createOscillator(); o.connect(audio.destination);
@@ -136,15 +146,17 @@ document.getElementById('start-btn').onclick = async () => {
         }, 545);
         tCycle = setInterval(() => {
             s--;
-            document.getElementById('cycle-clock').innerText = `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
+            let cm = Math.floor(s/60).toString().padStart(2,'0');
+            let cs = (s%60).toString().padStart(2,'0');
+            document.getElementById('cycle-clock').innerText = `${cm}:${cs}`;
             if(s <= 0) {
                 clearInterval(tCycle); clearInterval(tBeep);
                 window.speechSynthesis.speak(new SpeechSynthesisUtterance("Cambio. Evalúe ritmo."));
-                setTimeout(() => { if(isRunning) startCycle(); }, 5000);
+                setTimeout(() => { if(isRunning) ciclo(); }, 5000);
             }
         }, 1000);
     };
-    startCycle();
+    ciclo();
 };
 
 document.getElementById('stop-btn').onclick = () => {
@@ -152,44 +164,47 @@ document.getElementById('stop-btn').onclick = () => {
     clearInterval(tMain); clearInterval(tCycle); clearInterval(tBeep);
     if(recognition) recognition.stop();
     if(wakeLock) wakeLock.release();
-    document.getElementById('val-fin').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    
     document.getElementById('stop-btn').classList.add('hidden');
-    document.getElementById('save-area').classList.remove('hidden');
+    document.getElementById('save-action-area').classList.remove('hidden');
 };
 
-document.getElementById('save-btn').onclick = () => {
-    const data = {
+document.getElementById('confirm-save-btn').onclick = () => {
+    const patient = document.getElementById('patient-id').value || "Paciente Anónimo";
+    const session = {
         id: Date.now(),
-        p: document.getElementById('patient-id').value || "S/N",
-        i: document.getElementById('val-inicio').innerText,
-        f: document.getElementById('val-fin').innerText,
-        d: document.getElementById('total-clock').innerText,
-        sh: shocks,
-        events: log
+        name: patient,
+        duration: document.getElementById('total-clock').innerText,
+        date: new Date().toLocaleString([], {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'}),
+        events: logData
     };
-    let h = JSON.parse(localStorage.getItem('rcp_h') || "[]");
-    h.push(data);
-    localStorage.setItem('rcp_h', JSON.stringify(h.filter(x => x.id > Date.now() - 86400000)));
+
+    let history = JSON.parse(localStorage.getItem('rcp_v7_history') || "[]");
+    history.push(session);
+    // Filtrar solo 24h
+    history = history.filter(h => h.id > Date.now() - 86400000);
+    localStorage.setItem('rcp_v7_history', JSON.stringify(history));
+    
     renderHistory();
-    document.getElementById('save-area').innerHTML = "<p style='color:#2ecc71'>✓ Guardado en historial</p><button onclick='location.reload()'>NUEVO PACIENTE</button>";
+    document.getElementById('save-action-area').innerHTML = `<p style="color:#2ecc71; text-align:center;">✓ Guardado Correctamente</p><button onclick="location.reload()">INICIAR NUEVO PACIENTE</button>`;
 };
 
 function renderHistory() {
-    const h = JSON.parse(localStorage.getItem('rcp_h') || "[]");
-    const container = document.getElementById('history-list');
-    container.innerHTML = h.reverse().map(x => `
-        <div class="history-item">
-            <b>${x.p}</b> | Duración: ${x.d} | Choques: ${x.sh}<br>
-            <small>${x.i} - ${x.f}</small><br>
-            <details>
-                <summary>Ver Bitácora</summary>
-                ${x.events.map(e => `• [${e.t}] ${e.e}`).join('<br>')}
+    const history = JSON.parse(localStorage.getItem('rcp_v7_history') || "[]");
+    const list = document.getElementById('history-list');
+    if(history.length === 0) return;
+
+    list.innerHTML = history.reverse().map(h => `
+        <div class="history-card">
+            <strong>${h.name}</strong> - ${h.duration} (${h.date})
+            <details style="margin-top:5px; color:#aaa;">
+                <summary>Ver Eventos</summary>
+                ${h.events.map(e => `• [${e.t}] ${e.e}`).join('<br>')}
             </details>
         </div>
     `).join('');
 }
 
-// Cargar historial al abrir
 renderHistory();
 </script>
 </body>
