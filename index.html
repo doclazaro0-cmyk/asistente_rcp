@@ -3,50 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Asistente RCP Pro - Registro</title>
+    <title>RCP Pro - Sin Interrupciones</title>
     <style>
-        body { background: #000; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; overflow-x: hidden; }
-        #app { text-align: center; width: 95%; max-width: 450px; padding: 20px 0; }
+        body { background: #000; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        #app { text-align: center; width: 95%; max-width: 450px; }
         .setup-panel { background: #111; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #333; }
         #sound-selector { width: 100%; padding: 12px; background: #222; color: white; border: 1px solid #555; border-radius: 5px; font-size: 1.1rem; }
-        
-        #total-clock { font-size: 3.5rem; font-weight: bold; font-family: monospace; line-height: 1; }
-        .cycle-container { background: #0a0a0a; padding: 20px; border-radius: 20px; margin: 15px 0; transition: 0.1s; border: 4px solid #222; }
-        #cycle-clock { font-size: 6rem; font-weight: bold; color: #00ff00; font-family: monospace; line-height: 1; }
-        
-        /* Panel de Registro */
+        #total-clock { font-size: 3.5rem; font-weight: bold; font-family: monospace; }
+        .cycle-container { background: #0a0a0a; padding: 20px; border-radius: 20px; margin: 15px 0; border: 4px solid #222; }
+        #cycle-clock { font-size: 6rem; font-weight: bold; color: #00ff00; font-family: monospace; }
         .stats-panel { background: #111; border-radius: 10px; padding: 15px; margin-top: 15px; text-align: left; border-left: 4px solid #3498db; }
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem; }
         .stat-box { background: #1a1a1a; padding: 8px; border-radius: 5px; }
         .stat-label { color: #888; font-size: 0.7rem; text-transform: uppercase; }
-        .stat-value { font-weight: bold; color: #3498db; display: block; font-size: 1rem; }
-
+        .stat-value { font-weight: bold; color: #3498db; font-size: 1rem; }
         button { width: 100%; padding: 20px; font-size: 1.6rem; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; margin-top: 10px; }
         #start-btn { background: #27ae60; color: white; }
         #stop-btn { background: #c0392b; color: white; }
-        
-        .hidden { display: none; }
-        .label { font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        #reset-btn { background: #444; color: white; font-size: 1.2rem; }
+        .hidden { display: none !important; }
+        .label { font-size: 0.75rem; color: #666; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
 <div id="app">
     <div class="setup-panel" id="setup-panel">
-        <h3 style="margin:0 0 10px 0">CONFIGURACIÓN</h3>
         <select id="sound-selector">
-            <option value="tack">1. Tack Madera</option>
-            <option value="click">2. Click Metálico</option>
-            <option value="digital">3. Digital Fuerte</option>
-            <option value="drum">4. Percusión</option>
-            <option value="beep">5. Beep Médico</option>
+            <option value="tack">Sonido: Tack Madera</option>
+            <option value="beep">Sonido: Beep Médico</option>
         </select>
     </div>
 
-    <div class="total-container">
-        <div id="total-clock">00:00</div>
-        <div class="label">Tiempo Total de Maniobras</div>
-    </div>
+    <div id="total-clock">00:00</div>
+    <div class="label">Tiempo Total</div>
 
     <div class="cycle-container" id="visual-box">
         <div id="status-label" style="color:#888; font-weight:bold">LISTO</div>
@@ -65,21 +55,19 @@
                 <span class="stat-value" id="res-fin">--:--:--</span>
             </div>
             <div class="stat-box">
-                <span class="stat-label">Ciclos Completos</span>
+                <span class="stat-label">Ciclos</span>
                 <span class="stat-value" id="res-ciclos">0</span>
             </div>
             <div class="stat-box">
                 <span class="stat-label">Estado</span>
-                <span class="stat-value" id="res-estado" style="color:#e74c3c">DETENIDO</span>
+                <span class="stat-value" id="res-estado" style="color:#888">ESPERA</span>
             </div>
         </div>
     </div>
 
-    <div class="controls">
-        <button id="start-btn">INICIAR RCP</button>
-        <button id="stop-btn" class="hidden">FINALIZAR RCP</button>
-        <button id="reset-btn" class="hidden" style="background:#555; color:white; font-size:1rem; padding:10px">NUEVO PACIENTE</button>
-    </div>
+    <button id="start-btn">INICIAR RCP</button>
+    <button id="stop-btn" class="hidden">FINALIZAR RCP</button>
+    <button id="reset-btn" class="hidden">NUEVO PACIENTE (RESETEAR)</button>
 </div>
 
 <script>
@@ -94,23 +82,15 @@ function formatHora() {
            d.getSeconds().toString().padStart(2,'0');
 }
 
-function playTack(tipo) {
+function playTack() {
     const now = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    const filter = audioCtx.createBiquadFilter();
-    gain.connect(audioCtx.destination);
-    osc.connect(filter); filter.connect(gain);
-
-    switch(tipo) {
-        case 'tack': osc.type = 'square'; osc.frequency.setValueAtTime(150, now); break;
-        case 'click': osc.type = 'triangle'; osc.frequency.setValueAtTime(1200, now); break;
-        default: osc.type = 'square'; osc.frequency.setValueAtTime(200, now);
-    }
-    gain.gain.setValueAtTime(0.8, now);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.frequency.setValueAtTime(document.getElementById('sound-selector').value === 'tack' ? 150 : 800, now);
+    gain.gain.setValueAtTime(0.5, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
     osc.start(now); osc.stop(now + 0.1);
-    
     const box = document.getElementById('visual-box');
     box.style.borderColor = "#00ff00";
     setTimeout(() => box.style.borderColor = "#222", 60);
@@ -133,11 +113,11 @@ const iniciarRCP = async () => {
     document.getElementById('res-inicio').innerText = formatHora();
     document.getElementById('res-estado').innerText = "EN CURSO";
     document.getElementById('res-estado').style.color = "#2ecc71";
-    document.getElementById('res-ciclos').innerText = "0";
-
+    
     document.getElementById('setup-panel').classList.add('hidden');
     document.getElementById('start-btn').classList.add('hidden');
     document.getElementById('stop-btn').classList.remove('hidden');
+    document.getElementById('reset-btn').classList.add('hidden');
 
     totalTimer = setInterval(() => {
         totalSec++;
@@ -147,8 +127,7 @@ const iniciarRCP = async () => {
     const correrCiclo = () => {
         cycleSec = 120;
         document.getElementById('cycle-clock').style.color = "#00ff00";
-        tackTimer = setInterval(() => playTack(document.getElementById('sound-selector').value), 545);
-
+        tackTimer = setInterval(playTack, 545);
         cycleTimer = setInterval(() => {
             cycleSec--;
             document.getElementById('cycle-clock').innerText = formatTime(cycleSec);
@@ -166,6 +145,7 @@ const iniciarRCP = async () => {
     correrCiclo();
 };
 
+// --- FUNCIÓN DE DETENCIÓN SIN VENTANAS ---
 const detenerRCP = () => {
     isRunning = false;
     clearInterval(totalTimer);
@@ -179,6 +159,7 @@ const detenerRCP = () => {
     
     document.getElementById('stop-btn').classList.add('hidden');
     document.getElementById('reset-btn').classList.remove('hidden');
+    // NO HAY CONFIRM(), LA PANTALLA QUEDA LIBRE
 };
 
 const formatTime = (s) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
@@ -189,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('reset-btn').onclick = () => location.reload();
 
     const params = new URLSearchParams(window.location.search);
-    if (params.get('action') === 'start') setTimeout(iniciarRCP, 1500);
+    if (params.get('action') === 'start') setTimeout(iniciarRCP, 1000);
 });
 </script>
 </body>
